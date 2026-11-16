@@ -1,10 +1,12 @@
 # Proje Kuralları (ZORUNLU)
 
 Bu kurallar projeye müdahale eden **tüm yapay zekalar ve geliştiriciler** için bağlayıcıdır.
-Kod yazmadan önce bu dosyayı, `Docs/ARCHITECTURE.md` ve `Docs/PROGRESS.md` dosyalarını oku.
+Kod yazmadan önce bu dosyayı ve çalıştığın addon'un `Docs/` klasöründeki dosyaları (`PROGRESS.md`, mimari/sistem dokümanları) oku.
+
+> Bu dosya **Godot-AI-AbilitySystem** ve **Godot-AI-Tags** repolarında aynıdır. Değiştirirsen ikisini birden güncelle.
 
 ## 1. Amaç
-Godot (C#) ile Unreal Engine GAS (Gameplay Ability System) benzeri bir **AbilitySystem**.
+Godot (C#) ile Unreal Engine GAS (Gameplay Ability System) benzeri bir **AbilitySystem** ve onun kullandığı bağımsız bir **Tags** sistemi.
 - İsimlerde `Gameplay` ön eki **kullanılmaz** (`AbilitySystemComponent` olur, `GameplayAbility` olmaz).
 
 ## 2. Tasarım İlkeleri
@@ -22,30 +24,46 @@ Godot (C#) ile Unreal Engine GAS (Gameplay Ability System) benzeri bir **Ability
   - Zorunlu kullanım yerinde kısa bir not düş (neden gerekli).
 - Godot sınıfı gerektirmeyen mantık (hesaplama, kuyruk, etiket sorgusu vb.) düz C# sınıfı olur, `Node` olmak zorunda değildir.
 
-## 4. Dosya ve Klasör Yapısı
-Ana klasörler: `Assets/`, `Core/`, `Resource/`, `Docs/`.
+## 4. Addon'lar, Repolar ve Klasör Yapısı
+Proje iki Godot addon'undan oluşur. **Her addon ayrı bir git reposudur**; proje kökü hiçbir repoya girmez.
+
+| Addon | Klasör | Repo | Namespace | Bağımlılık |
+|---|---|---|---|---|
+| Tags | `addons/Tags/` | Godot-AI-Tags | `Tags` | Yok (bağımsız) |
+| AbilitySystem | `addons/AbilitySystem/` | Godot-AI-AbilitySystem | `AbilitySystem` | `Tags` (`using Tags;`) |
+
+- `Tags` hiçbir zaman `AbilitySystem`'i bilmez.
+- Proje kökü (`project.godot`, `.csproj`, `Resource/`, `Test/`) sadece test/geliştirme projesidir; git'e girmez.
+- **`Test/` klasörü kullanıcıya aittir; dokunma, taşıma, commit'leme.**
+- Git komutlarını ilgili addon klasöründe çalıştır (`git -C addons/<Addon> ...`).
+
+Her addon içindeki ana klasörler: `Assets/`, `Core/`, `Resource/`, `Docs/`.
 
 | Klasör | İçerik |
 |---|---|
 | `Assets/` | Görseller, sesler, fontlar vb. ham varlıklar |
 | `Core/` | Tüm C# sınıfları ve sahneler |
-| `Resource/` | `.tres` / `.res` resource **dosyaları** (veri) |
+| `Resource/` | Addon ile birlikte gelen `.tres` / `.res` resource **dosyaları** (veri) |
 | `Docs/` | Kurallar, mimari, ilerleme dosyaları |
 
-**Kural: her sınıf kendi klasöründe, o klasör `Core/` altında.**
+**Kural: her sınıf kendi klasöründe, o klasör addon'un `Core/` klasörü altında.**
 ```
-Core/
-  A/
-    A.cs
-    A.cs.uid
-    A.tscn        # A sınıfından sahne varsa burada
+addons/AbilitySystem/
+  Core/
+    A/
+      A.cs
+      A.cs.uid
+      A.tscn        # A sınıfından sahne varsa burada
 ```
 - Bir sınıfın sahnesi varsa **aynı klasörde** durur.
-- Resource **dosyaları** (`.tres`) `Resource/` altındadır; ama o resource'un **sınıfı/scripti** yine `Core/<ResourceSinifi>/` içindedir.
+- Resource'un **sınıfı/scripti** her zaman addon'un `Core/<ResourceSinifi>/` klasöründedir. **Verisi**:
+  - addon ile birlikte gelmesi gerekiyorsa `addons/<Addon>/Resource/` altında,
+  - oyuna/projeye özelse (ör. tag listesi `Tags.tres`) proje kökündeki `Resource/` altındadır ve repoya girmez.
   ```
-  Core/AbilityData/AbilityData.cs      # resource sınıfı
-  Resource/Abilities/Fireball.tres     # resource verisi
+  addons/AbilitySystem/Core/AbilityData/AbilityData.cs   # resource sınıfı
+  Resource/Abilities/Fireball.tres                       # projeye özel resource verisi
   ```
+- Addon içindeki yollar `res://addons/<Addon>/...` şeklindedir.
 - Bir klasör = bir sınıf. Birden fazla alakasız sınıf aynı klasöre konmaz. (Sadece o sınıfa ait küçük yardımcı `enum`/`struct` aynı klasörde olabilir.)
 - Dosya adı = sınıf adı (`PascalCase`).
 
@@ -55,7 +73,7 @@ Core/
 `[ext_resource type="Script" uid="..."]` + `metadata/_custom_type_script = "uid://..."`.
 
 ```ini
-[ext_resource type="Script" uid="uid://bbf8lyuj8omp1" path="res://Core/Projectile/Projectile.cs" id="1_6p3um"]
+[ext_resource type="Script" uid="uid://bbf8lyuj8omp1" path="res://addons/AbilitySystem/Core/Projectile/Projectile.cs" id="1_6p3um"]
 
 [node name="Projectile" type="Node2D"]
 script = ExtResource("1_6p3um")
@@ -66,15 +84,16 @@ metadata/_custom_type_script = "uid://bbf8lyuj8omp1"
 - Yeni script/sahne eklerken `.uid` dosyalarını da commit et.
 
 ## 6. Kod Stili
-- Namespace: `AbilitySystem` (alt namespace gerekmedikçe açma).
+- Namespace: addon'un adı (`AbilitySystem` veya `Tags`); alt namespace gerekmedikçe açma.
 - `PascalCase` tip/metot/property, `_camelCase` private alan, `camelCase` yerel değişken/parametre.
-- `partial` yalnızca Godot düğümlerinde (`Node` türevleri) zorunlu olduğu için kullanılır.
+- `partial` yalnızca Godot sınıflarından (`Node`, `Resource`, `EditorPlugin`...) türeyen tiplerde, zorunlu olduğu için kullanılır.
+- `EditorPlugin` gibi sadece editörde çalışan kodlar `#if TOOLS` içinde yazılır.
 - Tek dosyada tek ana tip.
 - Null-safe ve erken `return` tercih edilir; iç içe derin `if` yazma.
 
 ## 7. Çoklu Yapay Zeka İş Birliği
-- Çalışmaya başlamadan önce `Docs/PROGRESS.md` oku; **başka bir AI'ın "Yapılıyor" altına aldığı işe dokunma**.
+- Çalışmaya başlamadan önce ilgili addon'un `Docs/PROGRESS.md` dosyasını oku; **başka bir AI'ın "Yapılıyor" altına aldığı işe dokunma**.
 - Bir işe başlarken `PROGRESS.md` → "Yapılıyor" bölümüne `[AI adı/tarih]` ile ekle; bitince "Yapıldı"ya taşı.
-- Mimari karar aldıysan `Docs/ARCHITECTURE.md` içine yaz; kural çelişkisi bulursan düzeltme yerine `PROGRESS.md` → "Sorunlar / Notlar" altına not düş.
+- Mimari karar aldıysan ilgili addon'un mimari/sistem dokümanına yaz; kural çelişkisi bulursan düzeltme yerine `PROGRESS.md` → "Sorunlar / Notlar" altına not düş.
 - Bu kuralları değiştirme; değişiklik gerekiyorsa kullanıcıya sor.
 - Kapsam dışına çıkma: istenmeyen refactor, gereksiz dosya, spekülatif özellik ekleme.

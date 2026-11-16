@@ -1,10 +1,11 @@
 # Mimari Taslağı
 
-> Durum: **geliştiriliyor**. Tag sistemi uygulandı; diğer sistemler planlama aşamasında. Kararlar değiştikçe bu dosya güncellenir.
+> Durum: **geliştiriliyor**. Tag sistemi uygulandı ve ayrı addon'a (`addons/Tags/`, Godot-AI-Tags) taşındı; diğer sistemler planlama aşamasında. Kararlar değiştikçe bu dosya güncellenir.
 > Kurallar için: `Docs/RULES.md`.
 
 ## Hedef
-Unreal GAS benzeri, Godot C# ile modüler Ability sistemi. Her bileşen ayrı sınıf, ayrı klasör (`Core/<Sinif>/`).
+Unreal GAS benzeri, Godot C# ile modüler Ability sistemi; `addons/AbilitySystem/` addon'u olarak. Her bileşen ayrı sınıf, ayrı klasör (`addons/AbilitySystem/Core/<Sinif>/`).
+Tag'ler bağımsız **Tags** addon'undan gelir (`addons/Tags/`, namespace `Tags`).
 
 ## Planlanan Sistemler (GAS karşılıkları)
 
@@ -20,7 +21,7 @@ Unreal GAS benzeri, Godot C# ile modüler Ability sistemi. Her bileşen ayrı s�
 | `EffectData` (Resource) | — | Effect'in veri tanımı. |
 | `EffectSpec` | GameplayEffectSpec | Uygulanmış effect'in çalışma-zamanı örneği. |
 | `Modifier` | Modifier | Attribute üzerinde Add/Multiply/Override işlemi. |
-| `Tag` / `TagRegistry` / `TagContainer` / `TagCountContainer` / `TagList` / `TagLoader` | GameplayTag* | Hiyerarşik etiketler ve sorgular (`Ability.Fire.Ball`). Ayrıntı: `Docs/Systems/Tag.md`. |
+| `Tag` / `TagContainer` / `TagCountContainer` ... (**Tags addon'u**) | GameplayTag* | Hiyerarşik etiketler ve sorgular (`Ability.Fire.Ball`). Bu repoda değil; ayrıntı: `addons/Tags/Docs/Tag.md`. |
 | `Cooldown` | Cooldown GE | Ability bekleme süresi takibi. |
 | `AbilityTask` | AbilityTask | Ability içinde zaman/olay bekleyen asenkron iş parçaları. |
 | `AbilityEvent` | GameplayEvent | Ability'leri tetikleyen/olay taşıyan veri (struct). |
@@ -33,10 +34,10 @@ AbilitySystemComponent
    ├── Ability / AbilitySpec
    ├── Effect / EffectSpec / Modifier
    ├── AttributeSet / Attribute
-   └── TagContainer
+   └── TagContainer / TagCountContainer   (Tags addon'u)
 ```
 - Alt sistemler `AbilitySystemComponent`'i **bilmez** (gerekirse parametre olarak alır).
-- `Tag` ve `Attribute` en alt katman; kimseye bağımlı değildir.
+- `Tags` addon'u ve `Attribute` en alt katman; kimseye bağımlı değildir. `Tags`, AbilitySystem'i bilmez.
 
 ## Veri Akışı (özet)
 1. `AbilityData` (.tres, `Resource/` altında) tasarımcı tarafından düzenlenir.
@@ -52,10 +53,12 @@ AbilitySystemComponent
 ## Karar Günlüğü
 | Tarih | Karar | Gerekçe |
 |---|---|---|
+| 2026-11-17 | Proje iki addon'a bölündü: `addons/AbilitySystem` (bu repo) ve `addons/Tags` (Godot-AI-Tags); her biri ayrı git reposu, proje kökü repoya girmez | Kullanıcı isteği; repolarda sadece ilgili scriptler olsun |
+| 2026-11-17 | Tags namespace'i `Tags`; tag listesi projede (`res://Resource/Tags/Tags.tres`), yolu `tags/tag_list_path` project setting'inden okunur | Kullanıcı kararı; addon başka projelerde temiz kullanılsın |
 | 2026-11-16 | `Gameplay` ön eki kullanılmaz | Kullanıcı kuralı |
 | 2026-11-16 | Mümkün olduğunca saf C# tipleri | Performans, Godot marshalling maliyeti |
 | 2026-11-16 | Tag'ler `Resource/Tags/Tags.tres` içinde, `TagLoader` Autoload ile yüklenir | Kullanıcı kararı; tek kaynak, editörden düzenlenebilir |
 | 2026-11-16 | Ağ (replication) kapsam dışı | Kullanıcı kararı |
 | 2026-11-16 | `TagContainer` bir `Resource`; başlangıç tag'leri editörde açılır menüden seçilir | Kullanıcı isteği; diğer resource'lar `[Export] TagContainer` kullanır |
-| 2026-11-17 | `TagContainer` `List<Tag>` ile kalır; `HashSet` (tag + ebeveyn) ve bitset ölçüldü, seçilmedi | Container'lar küçük, sorgular zaten `TagCountContainer`'da O(1). Ölçüm tablosu: `Docs/Systems/Tag.md` |
-| 2026-11-16 | Tag isimleri için `StringName` kullanılmadı | Çalışma anında karşılaştırma zaten `int`; string yalnızca yüklemede. Ayrıntı: `Docs/Systems/Tag.md` |
+| 2026-11-17 | `TagContainer` `List<Tag>` ile kalır; `HashSet` (tag + ebeveyn) ve bitset ölçüldü, seçilmedi | Container'lar küçük, sorgular zaten `TagCountContainer`'da O(1). Ölçüm tablosu: `addons/Tags/Docs/Tag.md` |
+| 2026-11-16 | Tag isimleri için `StringName` kullanılmadı | Çalışma anında karşılaştırma zaten `int`; string yalnızca yüklemede. Ayrıntı: `addons/Tags/Docs/Tag.md` |

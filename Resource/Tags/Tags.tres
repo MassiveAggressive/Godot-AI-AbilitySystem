@@ -1,7 +1,0 @@
-[gd_resource type="Resource" script_class="TagList" format=3]
-
-[ext_resource type="Script" uid="uid://47awq2vlxdn0" path="res://Core/TagList/TagList.cs" id="1_taglist"]
-
-[resource]
-script = ExtResource("1_taglist")
-Tags = PackedStringArray("Ability.Fire.Ball", "State.Dead", "State.Stunned")

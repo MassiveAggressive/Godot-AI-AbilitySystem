@@ -1,6 +1,8 @@
 # AGENTS.md — Tüm Yapay Zekalar İçin Zorunlu Talimat
 
-Bu projede (Godot C# AbilitySystem, Unreal GAS benzeri) birden fazla yapay zeka çalışıyor.
+Bu repo **AbilitySystem** Godot C# addon'udur (Unreal GAS benzeri). Projede birden fazla yapay zeka çalışıyor.
+Tag sistemi ayrı bir addon ve ayrı bir repodur: `addons/Tags/` (Godot-AI-Tags). AbilitySystem onu kullanır, tersi yoktur.
+
 **Herhangi bir şey yapmadan önce sırayla oku:**
 
 1. [`Docs/RULES.md`](Docs/RULES.md) — bağlayıcı kurallar
@@ -10,9 +12,11 @@ Bu projede (Godot C# AbilitySystem, Unreal GAS benzeri) birden fazla yapay zeka 
 ## Hatırlatma (özet — ayrıntı RULES.md'de)
 - İsimlerde **`Gameplay` ön eki yok**.
 - Modüler, okunaklı; **aşırı soyutlama ve aşırı bağımlılık yok**; tek sınıf her işi yapmaz.
-- **Her sınıf `Core/<Sinif>/` klasöründe**, sahnesi de aynı klasörde. Assetler `Assets/`, resource dosyaları `Resource/` (resource sınıfı yine `Core/`'da).
+- **Her sınıf `addons/AbilitySystem/Core/<Sinif>/` klasöründe**, sahnesi de aynı klasörde. Assetler `Assets/`. Addon ile gelen resource dosyaları addon'un `Resource/` klasöründe, projeye özel olanlar proje kökündeki `Resource/` klasöründe (resource sınıfı yine `Core/`'da).
 - **Sahne kuralı:** Önce `Node2D`/`Node`/`Control` ekleyip sonra script bağlamak **yasak**. Düğüm doğrudan özel sınıftan, `script = ExtResource(...)` + `metadata/_custom_type_script = "uid://..."` ile yaratılır. UID'yi `.cs.uid` dosyasından al, uydurma.
 - **Performans önemli:** hot-path'te allocation/LINQ/boxing yok.
 - Mümkün olduğunca **saf C#** (`List`, `Dictionary`, `event`, `struct`); gereksiz yere Godot `Array`/`Dictionary`/`Variant`/`Signal` kullanma.
+- Namespace `AbilitySystem`; tag'ler için `using Tags;`.
+- Git komutları bu klasörde çalışır; proje kökü repo değildir. **`Test/` klasörü kullanıcıya aittir, dokunma.**
 - `Docs/PROGRESS.md`'yi güncel tut; başkasının "Yapılıyor" işine dokunma.
 - Kapsam dışı değişiklik yapma; kuralları kendi başına değiştirme.
