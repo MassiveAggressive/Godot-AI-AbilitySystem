@@ -1,6 +1,6 @@
 # Mimari Taslağı
 
-> Durum: **taslak / planlama**. Henüz kod yok. Kararlar değiştikçe bu dosya güncellenir.
+> Durum: **geliştiriliyor**. Tag sistemi uygulandı; diğer sistemler planlama aşamasında. Kararlar değiştikçe bu dosya güncellenir.
 > Kurallar için: `Docs/RULES.md`.
 
 ## Hedef
@@ -56,3 +56,6 @@ AbilitySystemComponent
 | 2026-11-16 | Mümkün olduğunca saf C# tipleri | Performans, Godot marshalling maliyeti |
 | 2026-11-16 | Tag'ler `Resource/Tags/Tags.tres` içinde, `TagLoader` Autoload ile yüklenir | Kullanıcı kararı; tek kaynak, editörden düzenlenebilir |
 | 2026-11-16 | Ağ (replication) kapsam dışı | Kullanıcı kararı |
+| 2026-11-16 | `TagContainer` bir `Resource`; başlangıç tag'leri editörde açılır menüden seçilir | Kullanıcı isteği; diğer resource'lar `[Export] TagContainer` kullanır |
+| 2026-11-17 | `TagContainer` `List<Tag>` ile kalır; `HashSet` (tag + ebeveyn) ve bitset ölçüldü, seçilmedi | Container'lar küçük, sorgular zaten `TagCountContainer`'da O(1). Ölçüm tablosu: `Docs/Systems/Tag.md` |
+| 2026-11-16 | Tag isimleri için `StringName` kullanılmadı | Çalışma anında karşılaştırma zaten `int`; string yalnızca yüklemede. Ayrıntı: `Docs/Systems/Tag.md` |

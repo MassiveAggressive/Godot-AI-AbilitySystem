@@ -1,1 +1,4 @@
-progress dosyamızdaki tag sistemini planlamaya başlayalım. bu planlama için ayrı bir md dosyası oluşturmanı istiyorum. diğer dosyalarla karışıp kafa karıştırmasını istemiyorum.
+private HashSet<Tag> _tags = [];
+private HashSet<Tag> _parentTags = [];
+
+böyle bir yapıya ne dersin? has deniyorsa parenttags e hasexact deniyorsa tags e bakar.
