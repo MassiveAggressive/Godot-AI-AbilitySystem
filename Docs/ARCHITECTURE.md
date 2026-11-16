@@ -20,7 +20,7 @@ Unreal GAS benzeri, Godot C# ile modüler Ability sistemi. Her bileşen ayrı s�
 | `EffectData` (Resource) | — | Effect'in veri tanımı. |
 | `EffectSpec` | GameplayEffectSpec | Uygulanmış effect'in çalışma-zamanı örneği. |
 | `Modifier` | Modifier | Attribute üzerinde Add/Multiply/Override işlemi. |
-| `Tag` / `TagContainer` | GameplayTag | Hiyerarşik etiketler ve sorgular (`Ability.Fire.Ball`). |
+| `Tag` / `TagRegistry` / `TagContainer` / `TagCountContainer` / `TagList` / `TagLoader` | GameplayTag* | Hiyerarşik etiketler ve sorgular (`Ability.Fire.Ball`). Ayrıntı: `Docs/Systems/Tag.md`. |
 | `Cooldown` | Cooldown GE | Ability bekleme süresi takibi. |
 | `AbilityTask` | AbilityTask | Ability içinde zaman/olay bekleyen asenkron iş parçaları. |
 | `AbilityEvent` | GameplayEvent | Ability'leri tetikleyen/olay taşıyan veri (struct). |
@@ -54,3 +54,5 @@ AbilitySystemComponent
 |---|---|---|
 | 2026-11-16 | `Gameplay` ön eki kullanılmaz | Kullanıcı kuralı |
 | 2026-11-16 | Mümkün olduğunca saf C# tipleri | Performans, Godot marshalling maliyeti |
+| 2026-11-16 | Tag'ler `Resource/Tags/Tags.tres` içinde, `TagLoader` Autoload ile yüklenir | Kullanıcı kararı; tek kaynak, editörden düzenlenebilir |
+| 2026-11-16 | Ağ (replication) kapsam dışı | Kullanıcı kararı |
