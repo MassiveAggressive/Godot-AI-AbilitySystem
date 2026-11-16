@@ -12,12 +12,15 @@
 
 - [x] Attribute sistemi planı (`Docs/Systems/Attribute.md`): set'ler C# sınıfı, iki çarpan işlemi, değer sınıfı `AttributeValue`, aktöre özel başlangıç değerleri init effect ile — [Claude, 2026-11-17]
 - [x] Klasör yapısı sadeleştirildi: `Core/` ve `Assets/` kalktı, sınıf klasörleri doğrudan addon kökünde (`RULES.md` §4, kullanıcı kararı) — [Claude, 2026-11-17]
+- [x] Attribute sistemi uygulandı (`Docs/Systems/Attribute.md`): `ModifierOp`, `AttributeValue`, `AttributeSet`, `AttributeId`, `AttributeRegistry`, `AttributeContainer`. Godot dışında 42 testle doğrulandı (formül, override, clamp/hook sırası, olaylar, registry, container, 0 allocation) — [Claude, 2026-11-17]
+
+- [x] `Aggregator` + `ModifierEvaluationChannel` eklendi, modifier hesabı `AttributeValue`'dan `Aggregator`'a taşındı; `ModifierOp` → `Add`, `Multiply`, `Divide`, `MultiplyCompound`, `AddFinal`, `Override`. 57 testle doğrulandı (kanallar, kanal bazında override, bölen sıfır koruması, 0 allocation) — [Claude, 2026-11-17]
 
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak
-- [ ] Attribute sistemi uygulaması (`Docs/Systems/Attribute.md`): `ModifierOp`, `AttributeValue`, `AttributeSet`, `AttributeId`, `AttributeRegistry`, `AttributeContainer`
+- [ ] `Aggregator`'ın `AttributeValue` içinden çıkarılması: şu an her `AttributeValue` kendi `Aggregator`'ını tutuyor; `AbilitySystemComponent` veya `AttributeSet` içine taşınabilir (karar ASC/Effect planında)
 - [ ] `Modifier`
 - [ ] `EffectData` (Resource) / `Effect` / `EffectSpec`
 - [ ] `AbilityData` (Resource) / `Ability` / `AbilitySpec`
