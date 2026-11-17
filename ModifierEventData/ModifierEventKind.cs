@@ -10,4 +10,7 @@ public enum ModifierEventKind
 
     /// <summary>All modifiers of one source were removed from the attribute.</summary>
     Removed = 2,
+
+    /// <summary>An added modifier got a new magnitude (it follows an attribute).</summary>
+    Updated = 3,
 }

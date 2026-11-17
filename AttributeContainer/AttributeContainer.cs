@@ -95,10 +95,16 @@ public sealed class AttributeContainer
         owner?.SetBaseValue(_attributesById[id.Value], value);
     }
 
-    public void AddModifier(AttributeId id, ModifierOp op, float magnitude, in ModifierSource source, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0)
+    public void AddModifier(AttributeId id, ModifierOp op, float magnitude, in ModifierSource source, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0, int key = 0)
     {
         AttributeSet owner = GetOwner(id);
-        owner?.AddModifier(_attributesById[id.Value], op, magnitude, source, channel);
+        owner?.AddModifier(_attributesById[id.Value], op, magnitude, source, channel, key);
+    }
+
+    public void UpdateModifier(AttributeId id, in ModifierSource source, int key, float magnitude)
+    {
+        AttributeSet owner = GetOwner(id);
+        owner?.UpdateModifier(_attributesById[id.Value], source, key, magnitude);
     }
 
     public void ExecuteModifier(AttributeId id, ModifierOp op, float magnitude, in ModifierSource source)

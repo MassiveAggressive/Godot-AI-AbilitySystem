@@ -6,8 +6,8 @@ Sistem ayrıntıları ve kararları: `Docs/Systems/<Sistem>.md`. Burada yalnızc
 | Sınıf | GAS karşılığı | Durum |
 |---|---|---|
 | `AttributeValue`, `AttributeSet`, `AttributeId`, `AttributeRegistry`, `AttributeContainer`, `Aggregator`, `ModifierOp`, `ModifierEvaluationChannel` | FGameplayAttributeData, UAttributeSet, FAggregator… | Uygulandı (`Attribute.md`) |
-| `ModifierSource`, `ModifierEventData` | FGameplayEffectModCallbackData | Planlandı (`Effect.md` Faz 0) |
-| `EffectData` (Resource), `Modifier` (Resource), `EffectSpec`, `EffectHandle`, `ActiveEffect`, `ActiveEffectContainer` | UGameplayEffect, FGameplayModifierInfo, FGameplayEffectSpec, FActiveGameplayEffect… | Planlandı (`Effect.md`) |
+| `ModifierSource`, `ModifierEventData` | FGameplayEffectModCallbackData | Uygulandı (`Effect.md` Faz 0) |
+| `EffectData`, `Modifier`, `Magnitude` (Resource'lar), `EffectSpec`, `EffectHandle`, `ActiveEffect`, `ActiveEffectContainer` | UGameplayEffect, FGameplayModifierInfo, FGameplayEffectSpec, FActiveGameplayEffect… | Faz 1 uygulandı; Faz 2–3 taslak (`Effect.md`) |
 | `AbilityData` (Resource), `Ability`, `AbilitySpec`, `AbilityTask`, `AbilityEvent` | UGameplayAbility… | Planlanacak |
 | `Cooldown` | Cooldown GE | Planlanacak (HasDuration effect + tag) |
 | `AbilitySystemComponent` | ASC | En son; alt sistemleri birleştirir, kendisi mantık taşımaz |
@@ -16,7 +16,7 @@ Sistem ayrıntıları ve kararları: `Docs/Systems/<Sistem>.md`. Burada yalnızc
 ```
 AbilitySystemComponent
    ├── Ability / AbilitySpec
-   ├── ActiveEffectContainer / ActiveEffect / EffectSpec / EffectData / Modifier ──► Timers addon'u (planlandı)
+   ├── ActiveEffectContainer / ActiveEffect / EffectSpec / EffectData / Modifier ──► Timers addon'u
    ├── AttributeContainer / AttributeSet / AttributeValue / Aggregator
    └── TagCountContainer / TagContainer (Tags addon'u)
 ```

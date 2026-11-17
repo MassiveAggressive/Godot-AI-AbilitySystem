@@ -1,6 +1,14 @@
 # Effect Sistemi — Plan
 
-> Durum: Faz 0 **uygulandı** (2026-11-17; 40 test, ekle+kaldır+çalıştır döngüsü ≈ 213 ns, 0 allocation). Faz 1 planlandı, Faz 2–3 taslak.
+> Durum: Faz 0 ve Faz 1 **uygulandı** (2026-11-17). Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation. Faz 2–3 taslak.
+>
+> Uygulamada netleşenler (Faz 1):
+> - `EffectSpec.SetCallerMagnitude` spec'i döner (zincirleme): `effects.Apply(new EffectSpec(data, caster).SetCallerMagnitude(tag, 35f))`. Constructor: `(data, instigator, causer, instigatorAbilitySystem)`.
+> - `ActiveEffect.IsRemoved`: elde tutulan referansın effect'i hâlâ aktif mi.
+> - `EffectData.IsInstant`, `IsPeriodic` yardımcıları.
+> - Tag'ler tek tek verilir ve sayılır: uygulama sırasında bir dinleyici effect'i kaldırırsa yalnızca verilmiş tag'ler geri alınır (başka kaynağın tag'i düşmez).
+> - `RemoveEffectsWithTags` her kaldırmadan sonra listeyi baştan tarar (dinleyiciler listeyi değiştirebilir) ve çağrı sırasında uygulanan effect'lere dokunmaz (yeniden uygulayan dinleyici döngüye girmez).
+> - `Modifiers` dizisindeki boş elemanlar atlanır.
 > Karşılığı: Unreal `UGameplayEffect`, `FGameplayEffectSpec`, `FActiveGameplayEffect(sContainer)`, `FGameplayModifierInfo`, `FGameplayEffectModCallbackData`.
 
 ## Amaç
@@ -12,7 +20,7 @@
 | Konu | Karar |
 |---|---|
 | Sınıflar | `EffectData` (Resource) → `EffectSpec` → `ActiveEffect` + `ActiveEffectContainer`; ayrı `Effect` yok. **Kullanıcı** |
-| Magnitude | `Modifier` içinde `MagnitudeType` + türe özel alanlar, ilgisiz alanlar gizli. **Kullanıcı** |
+| Magnitude | Ayrı `Magnitude` resource'u; tür (Constant/SetByCaller/AttributeBased) içinde seçilir, ilgisiz alanlar gizli. Modifier, süre ve periyot bunu kullanır. **Kullanıcı** |
 | `Aggregator`'ın yeri | `AttributeValue`'dan çıkar, `AttributeSet`'e taşınır (Faz 0). **Kullanıcı** (taşıma), yer: Claude |
 | Olay verisi | Hook ve olaylar `EffectSpec` almaz; `ModifierEventData` alır (kaynak, effect verisi, attribute, op, magnitude, eski/yeni değer). Attribute katmanında tanımlı, döngü yok. **Kullanıcı** (spec yok), yapı: Claude |
 | Zaman | Ayrı **Timers** addon'u (`TimerManager`); effect'ler süre/periyot için timer kurar, kendi `Tick`'i yok. **Kullanıcı** |
@@ -30,7 +38,7 @@
 | 0 | `Aggregator` → `AttributeSet`; `ModifierSource`, `ModifierEventData`, `PostEffectExecute`, modifier olayları, `ExecuteModifier`. |
 | — | Timers addon'u (Faz 1'den önce). |
 | 1 | Instant / HasDuration / Infinite, periyot, `Constant` + `SetByCaller`, tag'ler, effect olayları. |
-| 2 | Stacking, `AttributeBased` magnitude. |
+| 2 | Stacking. |
 | 3 | Özel magnitude (C#), execution, süregelen tag şartları, bağışıklık. |
 
 ## Faz 0 — Attribute Tarafı
@@ -89,29 +97,38 @@ protected override void PostEffectExecute(in ModifierEventData data)
 | Sınıf | Tür | Klasör |
 |---|---|---|
 | `EffectData` + `EffectDurationType` | Resource (`[Tool]`, `[GlobalClass]`) + enum | `EffectData/` |
-| `Modifier` + `MagnitudeType` | Resource (`[Tool]`, `[GlobalClass]`) + enum | `Modifier/` |
+| `Modifier` | Resource (`[Tool]`, `[GlobalClass]`) | `Modifier/` |
+| `Magnitude` + `MagnitudeType` + `AttributeCaptureSource` | Resource (`[Tool]`, `[GlobalClass]`) + enum'lar | `Magnitude/` |
 | `EffectSpec` | düz C# class | `EffectSpec/` |
 | `EffectHandle` | readonly struct | `EffectHandle/` |
 | `ActiveEffect` | düz C# class | `ActiveEffect/` |
 | `ActiveEffectContainer` | düz C# class | `ActiveEffectContainer/` |
 
-### EffectData
-- `DurationType` (`Instant`/`HasDuration`/`Infinite`), `Duration` (sn, yalnızca HasDuration).
-- Grup `Period`: `Period` (0 = yok), `ExecuteOnApplication = true`. Instant'ta gizli.
-- `Modifier[] Modifiers`.
+### EffectData (inspector grupları: Duration, Modifiers, Tags) — kullanıcı kararı
+- Grup `Duration`: `DurationType` (`Instant`/`HasDuration`/`Infinite`), `Duration` (`Magnitude`, sn; yalnızca HasDuration'da görünür, orada zorunlu), `Period` (`Magnitude`, sn; boş = periyot yok; Instant'ta gizli), `ExecuteOnApplication = true` (yalnızca periyot varken görünür).
+- Süre ve periyot uygulama anında hedefe karşı hesaplanır, effect boyunca sabittir. Süre ≤ 0 → uygulanmaz; periyot ≤ 0 → periyotsuz sayılır.
+- Grup `Modifiers`: `Modifier[] Modifiers`.
 - Grup `Tags` (`TagContainer`): `AssetTags` (effect'in kimliği), `GrantedTags` (aktifken hedefe; Instant'ta gizli), `ApplicationRequiredTags` (hepsi gerekli), `ApplicationBlockedTags` (biri varsa uygulanmaz), `RemoveEffectsWithTags` (uygulanınca Asset/Granted tag'i eşleşen aktif effect'leri kaldırır, hiyerarşik).
 - `null` alanlar boş sayılır. `_ValidateProperty` ilgisiz alanları gizler (usage `Storage` kalır, değer kaybolmaz); tür değişince `NotifyPropertyListChanged()`. Çalışma anında değiştirilmez (`.tres` paylaşılır).
 
 ### Modifier
-- `AttributeName` (menü `AttributeRegistry.BuildOptions()`), `Op`, `Channel` (Instant'ta yok sayılır), `MagnitudeType` (`Constant = 0`, `SetByCaller = 1`), `Value` (Constant), `CallerTagName` (SetByCaller; menü `TagContainer.BuildTagOptions()`).
-- Çalışma anı: `AttributeId Attribute`, `Tag CallerTag` ilk erişimde çözülür, önbelleğe alınır. Geçersiz isim → `None`, container yok sayar.
+- `AttributeName` (menü `AttributeRegistry.BuildOptions()`), `Op`, `Magnitude` (resource), `Channel` (Instant/periyotta yok sayılır).
+- Çalışma anı: `AttributeId Attribute` ilk erişimde çözülür, önbelleğe alınır. Geçersiz isim → `None`, container yok sayar. `Magnitude` boşsa 0 + hata.
+
+### Magnitude (Resource) — kullanıcı kararı
+Modifier büyüklüğü, effect süresi ve periyodu için ortak sayı tanımı. Tür resource içinde seçilir, yalnızca o türün alanları görünür:
+- `Constant`: `Value`.
+- `SetByCaller`: `CallerTagName` (tag menüsü); değer `spec.SetCallerMagnitude(tag, v)` ile verilir, yoksa 0 + hata.
+- `AttributeBased`: `BackingAttributeName` (attribute menüsü), `CaptureFrom` (`Source` = uygulayan, `Target` = alan), `Coefficient = 1`, `Snapshot = true`. Sonuç `Coefficient × CurrentValue`. Kaynaktan okumak için `spec.SourceAttributes` gerekir (yoksa 0 + hata); aktörde attribute yoksa 0, hata yok.
+- `Snapshot` (kullanıcı kararı): açık → uygulamada bir kez okunur. Kapalı → her kullanımda: Instant'ta o modifier çalışmadan hemen önce, periyotta her çalıştırmada, süreli/sonsuzda attribute değiştikçe (`CurrentValueChanged` dinlenir, `Aggregator`'da sırası korunarak `UpdateModifier`, olay `Updated`). Kendi attribute'una bağlı modifier takip edilmez (uyarı; sonsuz büyürdü). Süre ve periyot her zaman bir kez okunur.
+- Çalışma anı: `Tag CallerTag`, `AttributeId BackingAttribute` ilk erişimde çözülür.
 
 ### EffectSpec
-- `EffectSpec(EffectData data, Node instigator = null, Node causer = null)`; `Data`, `Instigator`, `Causer`.
-- `float Duration { get; set; }`: başlangıç `Data.Duration` (Infinite `+∞`); uygulamadan önce değiştirilebilir (cooldown azaltma).
-- `SetCallerMagnitude(Tag, float)`, `TryGetCallerMagnitude(Tag, out float)`: küçük liste, ilk `Set`'te oluşur.
-- `float CalculateMagnitude(Modifier)`: Constant → `Value`; SetByCaller → değer, yoksa `GD.PushError` + 0. Public (Ability maliyet kontrolü için).
-- Uygulamadan sonra değiştirilmez; aynı spec birden fazla hedefe uygulanabilir.
+- `EffectSpec(EffectData data, Node instigator = null, Node causer = null, Node instigatorAbilitySystem = null)`; `AttributeContainer SourceAttributes { get; set; }`.
+- `SetCallerMagnitude(Tag, float)` (spec'i döner), `TryGetCallerMagnitude(Tag, out float)`: küçük liste, ilk `Set`'te oluşur.
+- `float CalculateMagnitude(Magnitude, AttributeContainer target)`: public (Ability maliyet kontrolü için).
+- Instant'ta tüm magnitude'lar modifier'lar çalışmadan önce hesaplanır (hedeften okunan değer aynı effect'in önceki modifier'ından etkilenmez); 16 modifier'a kadar stack'te.
+- Uygulamadan sonra değiştirilmez; aynı spec birden fazla hedefe uygulanabilir, her hedef magnitude'ları kendine karşı hesaplar.
 
 ### ActiveEffect
 - Public: `Handle`, `Spec`, `Data`, `Duration`, `RemainingTime` (timer'dan; Infinite `+∞`).
@@ -146,7 +163,6 @@ effects.RemoveEffect(haste);
 
 ## Faz 2 (taslak)
 - **Stacking**: `None`/`ByTarget`/`BySource` (Instigator), `StackLimit`, süre yenileme, periyot sıfırlama, bitiş politikası. Yığın `n`: `Add`/`AddFinal` `m × n`, `Multiply`/`Divide` `1 + (m − 1) × n`, `MultiplyCompound` `mⁿ`, `Override` `m`. Açık konu: magnitude güncellenirken aggregator sırası (son Override) korunmalı.
-- **AttributeBased**: `BackingAttributeName`, `CaptureFrom` (Source/Target), `Coefficient`, `PreMultiplyAdd`, `PostMultiplyAdd`, `Snapshot`. Kaynak her zaman snapshot; hedef canlıysa `CurrentValueChanged` dinlenip modifier güncellenir. Attribute yoksa 0.
 
 ## Faz 3 (taslak)
 Özel magnitude (kullanıcı resource sınıfı), execution (zırhla azalan hasar), süregelen tag şartları (inhibition), bağışıklık.

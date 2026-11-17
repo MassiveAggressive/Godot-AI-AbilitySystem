@@ -19,14 +19,38 @@ public sealed class Aggregator
     // channel is the latest one.
     private readonly List<ModifierEntry> _modifiers = new(4);
 
-    /// <summary><paramref name="sourceId"/> identifies the source (e.g. an active effect) for <see cref="RemoveModifiers"/>.</summary>
-    public void AddModifier(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0)
+    /// <summary>
+    /// <paramref name="sourceId"/> identifies the source (e.g. an active effect) for <see cref="RemoveModifiers"/>;
+    /// <paramref name="key"/> tells one modifier of the source from another for <see cref="SetMagnitude"/>.
+    /// </summary>
+    public void AddModifier(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0, int key = 0)
     {
         int index = _modifiers.Count;
         while (index > 0 && _modifiers[index - 1].Channel > channel)
             index--;
 
-        _modifiers.Insert(index, new ModifierEntry(op, magnitude, sourceId, channel));
+        _modifiers.Insert(index, new ModifierEntry(op, magnitude, sourceId, channel, key));
+    }
+
+    /// <summary>Changes the magnitude of one modifier in place, keeping its order. False if not found or unchanged.</summary>
+    public bool SetMagnitude(int sourceId, int key, float magnitude, out ModifierOp op)
+    {
+        for (int i = 0; i < _modifiers.Count; i++)
+        {
+            ModifierEntry entry = _modifiers[i];
+            if (entry.SourceId != sourceId || entry.Key != key)
+                continue;
+
+            op = entry.Op;
+            if (entry.Magnitude == magnitude)
+                return false;
+
+            _modifiers[i] = new ModifierEntry(entry.Op, magnitude, sourceId, entry.Channel, key);
+            return true;
+        }
+
+        op = default;
+        return false;
     }
 
     /// <summary>Removes every modifier of <paramref name="sourceId"/> and keeps the order of the rest. False if there was none.</summary>
@@ -131,13 +155,15 @@ public sealed class Aggregator
         public readonly float Magnitude;
         public readonly int SourceId;
         public readonly ModifierEvaluationChannel Channel;
+        public readonly int Key;
 
-        public ModifierEntry(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel)
+        public ModifierEntry(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel, int key)
         {
             Op = op;
             Magnitude = magnitude;
             SourceId = sourceId;
             Channel = channel;
+            Key = key;
         }
     }
 }

@@ -27,8 +27,11 @@ public abstract class AttributeSet
         Recalculate(attribute, oldBase, oldCurrent);
     }
 
-    /// <summary>Adds a modifier to the current value until <see cref="RemoveModifiers"/> is called with <paramref name="source"/>'s id.</summary>
-    public void AddModifier(AttributeValue attribute, ModifierOp op, float magnitude, in ModifierSource source, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0)
+    /// <summary>
+    /// Adds a modifier to the current value until <see cref="RemoveModifiers"/> is called with <paramref name="source"/>'s id.
+    /// <paramref name="key"/> tells this modifier from the source's others for <see cref="UpdateModifier"/>.
+    /// </summary>
+    public void AddModifier(AttributeValue attribute, ModifierOp op, float magnitude, in ModifierSource source, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0, int key = 0)
     {
         float oldCurrent = attribute.CurrentValue;
 
@@ -39,9 +42,23 @@ public abstract class AttributeSet
             _aggregators.Add(attribute, aggregator);
         }
 
-        aggregator.AddModifier(op, magnitude, source.Id, channel);
+        aggregator.AddModifier(op, magnitude, source.Id, channel, key);
         Recalculate(attribute, attribute.BaseValue, oldCurrent);
         RaiseModifierApplied(new ModifierEventData(ModifierEventKind.Added, attribute, op, magnitude, oldCurrent, attribute.CurrentValue, source));
+    }
+
+    /// <summary>Gives an added modifier a new magnitude, keeping its order among the attribute's modifiers.</summary>
+    public void UpdateModifier(AttributeValue attribute, in ModifierSource source, int key, float magnitude)
+    {
+        if (_aggregators == null || !_aggregators.TryGetValue(attribute, out Aggregator aggregator))
+            return;
+
+        float oldCurrent = attribute.CurrentValue;
+        if (!aggregator.SetMagnitude(source.Id, key, magnitude, out ModifierOp op))
+            return;
+
+        Recalculate(attribute, attribute.BaseValue, oldCurrent);
+        RaiseModifierApplied(new ModifierEventData(ModifierEventKind.Updated, attribute, op, magnitude, oldCurrent, attribute.CurrentValue, source));
     }
 
     /// <summary>Removes every modifier that <paramref name="sourceId"/> added to <paramref name="attribute"/>.</summary>
