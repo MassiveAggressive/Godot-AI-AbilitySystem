@@ -46,8 +46,8 @@
 Modifier'ı kimin, hangi effect ile uyguladığı:
 - `int Id`: `Aggregator` kaynak anahtarı (effect handle'ı; elle eklenen için negatif).
 - `Resource Data`: uygulayan effect verisi (`EffectData`). Tip `Resource`: attribute katmanı effect sınıflarını bilmesin (döngü yok); kullanan `data.Source.Data as EffectData` ile alır.
-- `Node Instigator`, `Node Causer`: null veya silinmiş olabilir → `GodotObject.IsInstanceValid`.
-- `ModifierSource(int id, Resource data = null, Node instigator = null, Node causer = null)`.
+- `Node Instigator`, `Node Causer`, `Node InstigatorAbilitySystem`: null veya silinmiş olabilir → `GodotObject.IsInstanceValid`. Üçüncüsü uygulayanın ASC'si; attribute katmanı ASC'yi bilmesin diye `Node` tipinde, kullanan `as AbilitySystemComponent` ile alır. `EffectSpec`'e de aynı alan eklenir (ASC planında netleşir).
+- `ModifierSource(int id, Resource data = null, Node instigator = null, Node causer = null, Node instigatorAbilitySystem = null)`.
 
 ### ModifierEventData (`readonly struct`, `ModifierEventData/`)
 - `ModifierEventKind Kind`: `Executed` (Base'e uygulandı), `Added`, `Removed` (Current'a eklendi/kaldırıldı). Enum aynı klasörde.
