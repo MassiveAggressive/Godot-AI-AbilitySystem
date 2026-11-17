@@ -31,6 +31,9 @@ public sealed class ActiveEffect
 
     public bool IsPeriodic => Period > 0f;
 
+    /// <summary>Applications stacked into this effect; 1 unless <see cref="EffectData.StackingType"/> is set.</summary>
+    public int StackCount { get; internal set; } = 1;
+
     /// <summary>Seconds left; +∞ for infinite effects, 0 once removed.</summary>
     public float RemainingTime
     {
@@ -48,12 +51,17 @@ public sealed class ActiveEffect
 
     internal ModifierSource Source { get; }
 
-    /// <summary>Per modifier, calculated once when applied.</summary>
+    /// <summary>Per modifier and per stack (before <see cref="StackCount"/> is applied).</summary>
     internal float[] Magnitudes { get; }
 
     internal TimerHandle DurationTimer { get; set; }
 
     internal TimerHandle PeriodTimer { get; set; }
+
+    // Bound once, so restarting a timer when a stack is added allocates nothing.
+    internal Action ExpireCallback { get; set; }
+
+    internal Action PeriodCallback { get; set; }
 
     /// <summary>How many of the granted tags were given, so removal takes back exactly those.</summary>
     internal int GrantedTagCount { get; set; }

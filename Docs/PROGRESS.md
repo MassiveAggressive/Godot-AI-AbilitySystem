@@ -12,12 +12,13 @@
 - `Magnitude` resource'u (Constant/SetByCaller/AttributeBased snapshot); süre ve periyot da Magnitude; `EffectData` grupları; 48 test — [Claude, 2026-11-17]
 - `Magnitude.Snapshot` (kapalıysa her kullanımda okunur, süreli effect attribute'u takip eder), Pre/PostMultiplyAdd kaldırıldı; `Aggregator.SetMagnitude`, `UpdateModifier`, `ModifierEventKind.Updated`; 11 test — [Claude, 2026-11-17]
 
+- Effect Faz 2: stacking (`ByTarget`/`BySource`, limit, süre/periyot yenileme, bitiş politikası); 18 test — [Claude, 2026-11-17]
+
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla, `Systems/Effect.md` → Uygulama Sırası)
 - [ ] Editörde `EffectData`/`Modifier`/`Magnitude` inspector'ını dene (gruplar, gizlenen alanlar, menüler, `.tres` kaydı); headless testte denenemiyor
-- [ ] Effect Faz 2: stacking
 - [ ] Effect Faz 3: özel magnitude / execution, süregelen tag şartları, bağışıklık
 - [ ] Ability, Cooldown, AbilityTask, ASC, örnek sahne (Fireball)
 

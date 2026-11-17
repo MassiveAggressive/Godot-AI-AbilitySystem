@@ -17,6 +17,7 @@ namespace AbilitySystem;
 public partial class EffectData : Resource
 {
     private EffectDurationType _durationType;
+    private EffectStackingType _stackingType;
     private Magnitude _period;
     private Modifier[] _modifiers = Array.Empty<Modifier>();
 
@@ -52,6 +53,34 @@ public partial class EffectData : Resource
     [Export]
     public bool ExecuteOnApplication { get; set; } = true;
 
+    /// <summary>How repeated applications combine. Not used by instant effects.</summary>
+    [ExportGroup("Stacking")]
+    [Export]
+    public EffectStackingType StackingType
+    {
+        get => _stackingType;
+        set
+        {
+            _stackingType = value;
+            NotifyPropertyListChanged();
+        }
+    }
+
+    /// <summary>Most stacks at once; 0 for no limit. Applications beyond it only refresh.</summary>
+    [Export(PropertyHint.Range, "0,100,1,or_greater")]
+    public int StackLimit { get; set; }
+
+    /// <summary>A new application starts the duration again.</summary>
+    [Export]
+    public bool RefreshDurationOnStack { get; set; } = true;
+
+    /// <summary>A new application starts the period again.</summary>
+    [Export]
+    public bool ResetPeriodOnStack { get; set; }
+
+    [Export]
+    public StackExpirationPolicy StackExpiration { get; set; }
+
     [ExportGroup("Modifiers")]
     [Export]
     public Modifier[] Modifiers
@@ -83,17 +112,24 @@ public partial class EffectData : Resource
 
     public bool IsInstant => _durationType == EffectDurationType.Instant;
 
+    /// <summary>True when applications stack (never for instant effects).</summary>
+    public bool Stacks => !IsInstant && _stackingType != EffectStackingType.None;
+
     // Godot API: the property info arrives as a Godot Dictionary.
     public override void _ValidateProperty(Godot.Collections.Dictionary property)
     {
         if (!Engine.IsEditorHint())
             return;
 
+        bool hasDuration = _durationType == EffectDurationType.HasDuration;
         bool visible = property["name"].AsString() switch
         {
-            nameof(Duration) => _durationType == EffectDurationType.HasDuration,
-            nameof(Period) or nameof(GrantedTags) => !IsInstant,
+            nameof(Duration) => hasDuration,
+            nameof(Period) or nameof(GrantedTags) or nameof(StackingType) => !IsInstant,
             nameof(ExecuteOnApplication) => !IsInstant && _period != null,
+            nameof(StackLimit) => Stacks,
+            nameof(RefreshDurationOnStack) or nameof(StackExpiration) => Stacks && hasDuration,
+            nameof(ResetPeriodOnStack) => Stacks && _period != null,
             _ => true,
         };
 

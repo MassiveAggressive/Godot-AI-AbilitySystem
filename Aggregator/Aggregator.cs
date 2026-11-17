@@ -92,6 +92,27 @@ public sealed class Aggregator
         }
     }
 
+    /// <summary>
+    /// Magnitude of <paramref name="stackCount"/> stacks of one modifier: additive ops multiply by the count,
+    /// Multiply/Divide add their bonus per stack (1 + (m − 1) × n), MultiplyCompound compounds (mⁿ), Override stays m.
+    /// </summary>
+    public static float StackMagnitude(ModifierOp op, float magnitude, int stackCount)
+    {
+        switch (op)
+        {
+            case ModifierOp.Add:
+            case ModifierOp.AddFinal:
+                return magnitude * stackCount;
+            case ModifierOp.Multiply:
+            case ModifierOp.Divide:
+                return 1f + (magnitude - 1f) * stackCount;
+            case ModifierOp.MultiplyCompound:
+                return MathF.Pow(magnitude, stackCount);
+            default:
+                return magnitude;
+        }
+    }
+
     public float Evaluate(float baseValue)
     {
         float value = baseValue;

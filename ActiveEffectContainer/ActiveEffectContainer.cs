@@ -41,6 +41,9 @@ public sealed class ActiveEffectContainer
     /// <summary>An instant effect was applied, or a periodic effect executed one period.</summary>
     public event Action<EffectSpec> EffectExecuted;
 
+    /// <summary>(effect, old count, new count) after the stack grew or shrank and its modifiers were updated.</summary>
+    public event Action<ActiveEffect, int, int> StackCountChanged;
+
     public int Count => _effects.Count;
 
     public ActiveEffect this[int index] => _effects[index];
@@ -60,6 +63,8 @@ public sealed class ActiveEffectContainer
     /// <summary>
     /// Applies the effect. Returns None if it was not applied (tag requirements, duration not above zero).
     /// Instant effects return a valid handle that is never active. Magnitudes are calculated here, against this actor.
+    /// A stacking effect that is already active gains a stack and returns the existing handle; the stack keeps its own
+    /// magnitudes and duration, the new spec only adds to the count.
     /// </summary>
     public EffectHandle Apply(EffectSpec spec)
     {
@@ -88,6 +93,13 @@ public sealed class ActiveEffectContainer
 
         RemoveEffectsWithTags(data.RemoveEffectsWithTags);
 
+        ActiveEffect stack = data.Stacks ? FindStack(spec) : null;
+        if (stack != null)
+        {
+            AddStack(stack);
+            return stack.Handle;
+        }
+
         EffectHandle handle = EffectHandle.Next();
         var source = new ModifierSource(handle.Value, data, spec.Instigator, spec.Causer, spec.InstigatorAbilitySystem);
 
@@ -99,13 +111,14 @@ public sealed class ActiveEffectContainer
         return handle;
     }
 
-    public bool RemoveEffect(EffectHandle handle)
+    /// <summary>Removes <paramref name="stacks"/> stacks (all by default); the effect ends with its last stack.</summary>
+    public bool RemoveEffect(EffectHandle handle, int stacks = int.MaxValue)
     {
         ActiveEffect effect = Get(handle);
-        if (effect == null)
+        if (effect == null || stacks <= 0)
             return false;
 
-        Remove(effect);
+        RemoveStacks(effect, stacks);
         return true;
     }
 
@@ -197,7 +210,7 @@ public sealed class ActiveEffectContainer
             {
                 Modifier modifier = modifiers[i];
                 if (modifier != null)
-                    _attributes.AddModifier(modifier.Attribute, modifier.Op, magnitudes[i], source, modifier.Channel, key: i);
+                    _attributes.AddModifier(modifier.Attribute, modifier.Op, StackedMagnitude(effect, i), source, modifier.Channel, key: i);
             }
 
             BindLiveModifiers(effect);
@@ -216,12 +229,15 @@ public sealed class ActiveEffectContainer
                 return;
         }
 
+        effect.ExpireCallback = () => Expire(effect);
+        effect.PeriodCallback = () => ExecutePeriod(effect);
+
         // The period timer starts first so that a period ending together with the duration still runs.
         if (effect.IsPeriodic)
-            effect.PeriodTimer = TimerManager.Start(period, () => ExecutePeriod(effect), period);
+            RestartPeriod(effect);
 
         if (data.DurationType == EffectDurationType.HasDuration)
-            effect.DurationTimer = TimerManager.Start(duration, () => Expire(effect));
+            RestartDuration(effect);
 
         EffectAdded?.Invoke(effect);
 
@@ -244,10 +260,91 @@ public sealed class ActiveEffectContainer
             if (!IsSnapshot(modifier.Magnitude))
                 effect.Magnitudes[i] = effect.Spec.CalculateMagnitude(modifier.Magnitude, _attributes);
 
-            _attributes.ExecuteModifier(modifier.Attribute, modifier.Op, effect.Magnitudes[i], effect.Source);
+            _attributes.ExecuteModifier(modifier.Attribute, modifier.Op, StackedMagnitude(effect, i), effect.Source);
         }
 
         EffectExecuted?.Invoke(effect.Spec);
+    }
+
+    private ActiveEffect FindStack(EffectSpec spec)
+    {
+        bool bySource = spec.Data.StackingType == EffectStackingType.BySource;
+        for (int i = 0; i < _effects.Count; i++)
+        {
+            ActiveEffect effect = _effects[i];
+            if (effect.Data == spec.Data && (!bySource || effect.Spec.Instigator == spec.Instigator))
+                return effect;
+        }
+
+        return null;
+    }
+
+    private void AddStack(ActiveEffect effect)
+    {
+        EffectData data = effect.Data;
+        int oldCount = effect.StackCount;
+        bool grows = data.StackLimit <= 0 || oldCount < data.StackLimit;
+        if (grows)
+        {
+            effect.StackCount = oldCount + 1;
+            UpdateStackedModifiers(effect);
+            if (effect.IsRemoved)
+                return;
+        }
+
+        // At the limit an application still refreshes, as in Unreal.
+        if (data.DurationType == EffectDurationType.HasDuration && data.RefreshDurationOnStack)
+            RestartDuration(effect);
+
+        if (effect.IsPeriodic && data.ResetPeriodOnStack)
+            RestartPeriod(effect);
+
+        if (grows)
+            StackCountChanged?.Invoke(effect, oldCount, effect.StackCount);
+    }
+
+    private void RemoveStacks(ActiveEffect effect, int stacks)
+    {
+        if (stacks >= effect.StackCount)
+        {
+            Remove(effect);
+            return;
+        }
+
+        int oldCount = effect.StackCount;
+        effect.StackCount = oldCount - stacks;
+        UpdateStackedModifiers(effect);
+        if (!effect.IsRemoved)
+            StackCountChanged?.Invoke(effect, oldCount, effect.StackCount);
+    }
+
+    /// <summary>Periodic effects use the stack count when they execute; the others update their added modifiers.</summary>
+    private void UpdateStackedModifiers(ActiveEffect effect)
+    {
+        if (effect.IsPeriodic)
+            return;
+
+        Modifier[] modifiers = effect.Data.Modifiers;
+        for (int i = 0; i < modifiers.Length && !effect.IsRemoved; i++)
+        {
+            if (modifiers[i] != null)
+                _attributes.UpdateModifier(modifiers[i].Attribute, effect.Source, i, StackedMagnitude(effect, i));
+        }
+    }
+
+    private static float StackedMagnitude(ActiveEffect effect, int index) =>
+        Aggregator.StackMagnitude(effect.Data.Modifiers[index].Op, effect.Magnitudes[index], effect.StackCount);
+
+    private static void RestartDuration(ActiveEffect effect)
+    {
+        TimerManager.Stop(effect.DurationTimer);
+        effect.DurationTimer = TimerManager.Start(effect.Duration, effect.ExpireCallback);
+    }
+
+    private static void RestartPeriod(ActiveEffect effect)
+    {
+        TimerManager.Stop(effect.PeriodTimer);
+        effect.PeriodTimer = TimerManager.Start(effect.Period, effect.PeriodCallback, effect.Period);
     }
 
     private static bool IsSnapshot(Magnitude magnitude) =>
@@ -293,7 +390,7 @@ public sealed class ActiveEffectContainer
         try
         {
             effect.Magnitudes[index] = magnitude;
-            _attributes.UpdateModifier(modifier.Attribute, effect.Source, index, magnitude);
+            _attributes.UpdateModifier(modifier.Attribute, effect.Source, index, StackedMagnitude(effect, index));
         }
         finally
         {
@@ -313,7 +410,24 @@ public sealed class ActiveEffectContainer
             ExecutePeriod(effect);
         }
 
-        Remove(effect);
+        if (effect.IsRemoved)
+            return;
+
+        StackExpirationPolicy policy = effect.Data.Stacks ? effect.Data.StackExpiration : StackExpirationPolicy.ClearStack;
+        switch (policy)
+        {
+            case StackExpirationPolicy.RemoveOneAndRefresh:
+                RemoveStacks(effect, 1);
+                if (!effect.IsRemoved)
+                    RestartDuration(effect);
+                break;
+            case StackExpirationPolicy.RefreshDuration:
+                RestartDuration(effect);
+                break;
+            default:
+                Remove(effect);
+                break;
+        }
     }
 
     private void Remove(ActiveEffect effect)

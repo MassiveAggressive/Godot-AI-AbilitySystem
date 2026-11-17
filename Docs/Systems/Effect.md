@@ -1,6 +1,6 @@
 # Effect Sistemi — Plan
 
-> Durum: Faz 0 ve Faz 1 **uygulandı** (2026-11-17). Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation. Faz 2–3 taslak.
+> Durum: Faz 0, 1 ve 2 **uygulandı** (2026-11-17); Faz 3 taslak. Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation. Faz 2–3 taslak.
 >
 > Uygulamada netleşenler (Faz 1):
 > - `EffectSpec.SetCallerMagnitude` spec'i döner (zincirleme): `effects.Apply(new EffectSpec(data, caster).SetCallerMagnitude(tag, 35f))`. Constructor: `(data, instigator, causer, instigatorAbilitySystem)`.
@@ -161,8 +161,11 @@ EffectHandle haste = effects.Apply(new EffectSpec(hasteData));
 effects.RemoveEffect(haste);
 ```
 
-## Faz 2 (taslak)
-- **Stacking**: `None`/`ByTarget`/`BySource` (Instigator), `StackLimit`, süre yenileme, periyot sıfırlama, bitiş politikası. Yığın `n`: `Add`/`AddFinal` `m × n`, `Multiply`/`Divide` `1 + (m − 1) × n`, `MultiplyCompound` `mⁿ`, `Override` `m`. Açık konu: magnitude güncellenirken aggregator sırası (son Override) korunmalı.
+## Faz 2 — Stacking (uygulandı, 18 test)
+- `EffectData` grubu `Stacking` (Instant'ta gizli): `StackingType` (`None`/`ByTarget`/`BySource` = her `Instigator` için ayrı), `StackLimit` (0 = sınırsız), `RefreshDurationOnStack = true`, `ResetPeriodOnStack`, `StackExpiration` (`ClearStack` / `RemoveOneAndRefresh` / `RefreshDuration`).
+- Yığına eklenen uygulama mevcut handle'ı döner; yığın kendi magnitude ve süresini korur (Unreal gibi), yeni spec yalnızca sayıyı artırır. Sınırdayken yalnızca yeniler. Yığın eklenince periyodik effect ayrıca çalışmaz.
+- Yığın `n`: `Aggregator.StackMagnitude` → `Add`/`AddFinal` `m × n`, `Multiply`/`Divide` `1 + (m − 1) × n`, `MultiplyCompound` `mⁿ`, `Override` `m`. Modifier'lar sırası korunarak güncellenir (`UpdateModifier`); periyodik effect her çalıştırmada yığınlı değeri kullanır.
+- `RemoveEffect(handle, stacks = hepsi)`, `ActiveEffect.StackCount`, olay `StackCountChanged(effect, eski, yeni)`. Yığın ekleme 0 allocation.
 
 ## Faz 3 (taslak)
 Özel magnitude (kullanıcı resource sınıfı), execution (zırhla azalan hasar), süregelen tag şartları (inhibition), bağışıklık.
