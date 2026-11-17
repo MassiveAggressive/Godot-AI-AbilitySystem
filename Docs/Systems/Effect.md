@@ -1,6 +1,6 @@
 # Effect Sistemi — Plan
 
-> Durum: Faz 0, 1 ve 2 **uygulandı** (2026-11-17); Faz 3 taslak. Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation. Faz 2–3 taslak.
+> Durum: Faz 0, 1 ve 2 **uygulandı** (2026-11-17); Faz 3 planı onaylandı. Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation.
 >
 > Uygulamada netleşenler (Faz 1):
 > - `EffectSpec.SetCallerMagnitude` spec'i döner (zincirleme): `effects.Apply(new EffectSpec(data, caster).SetCallerMagnitude(tag, 35f))`. Constructor: `(data, instigator, causer, instigatorAbilitySystem)`.
@@ -39,7 +39,7 @@
 | — | Timers addon'u (Faz 1'den önce). |
 | 1 | Instant / HasDuration / Infinite, periyot, `Constant` + `SetByCaller`, tag'ler, effect olayları. |
 | 2 | Stacking. |
-| 3 | Özel magnitude (C#), execution, süregelen tag şartları, bağışıklık. |
+| 3 | Özel magnitude (C#), execution, süregelen tag şartları, kaldırma şartı, bağışıklık. |
 
 ## Faz 0 — Attribute Tarafı
 
@@ -167,8 +167,87 @@ effects.RemoveEffect(haste);
 - Yığın `n`: `Aggregator.StackMagnitude` → `Add`/`AddFinal` `m × n`, `Multiply`/`Divide` `1 + (m − 1) × n`, `MultiplyCompound` `mⁿ`, `Override` `m`. Modifier'lar sırası korunarak güncellenir (`UpdateModifier`); periyodik effect her çalıştırmada yığınlı değeri kullanır.
 - `RemoveEffect(handle, stacks = hepsi)`, `ActiveEffect.StackCount`, olay `StackCountChanged(effect, eski, yeni)`. Yığın ekleme 0 allocation.
 
-## Faz 3 (taslak)
-Özel magnitude (kullanıcı resource sınıfı), execution (zırhla azalan hasar), süregelen tag şartları (inhibition), bağışıklık.
+## Faz 3 — Hesaplama, Süregelen Şartlar, Bağışıklık (plan onaylandı, 2026-11-17)
+Karşılığı: Unreal `UGameplayModMagnitudeCalculation`, `UGameplayEffectExecutionCalculation`, `OngoingTagRequirements` (inhibition), `UImmunityGameplayEffectComponent`. Attribute katmanı değişmez.
+
+| Sınıf | Tür | Klasör |
+|---|---|---|
+| `CalculationContext` | readonly struct | `CalculationContext/` |
+| `MagnitudeCalculation` | abstract Resource (`[GlobalClass]`) | `MagnitudeCalculation/` |
+| `ExecutionCalculation` | abstract Resource (`[GlobalClass]`) | `ExecutionCalculation/` |
+| `ExecutionOutput` | sealed class | `ExecutionOutput/` |
+
+### CalculationContext
+Hesaplamaya verilen bilgi, `in` ile (kopya yok). Struct, böylece alan eklemek kullanıcı override'larını bozmaz.
+- `EffectSpec Spec` (Data, Instigator, Causer, SetByCaller), `SourceAttributes`, `SourceTags` (spec'ten), `TargetAttributes`, `TargetTags`, `int StackCount` (Instant'ta 1). Kaynak alanları ve `TargetTags` null olabilir.
+- `float GetSourceValue(AttributeId)`, `GetTargetValue(AttributeId)`: current; container veya attribute yoksa 0.
+- `EffectSpec` ekleri: `TagCountContainer SourceTags { get; set; }` (`SourceAttributes` gibi, ASC dolduracak); `CalculateMagnitude(magnitude, target, TagCountContainer targetTags = null)`.
+
+### Özel magnitude
+- `MagnitudeType.Custom`, `Magnitude.Calculation` (`MagnitudeCalculation`, yalnızca Custom'da görünür; boşsa 0 + hata).
+- `public abstract float Calculate(in CalculationContext context)`: yığın başına değer (yığın çarpımı yine `Aggregator.StackMagnitude`'da).
+- Kullanıcı `[GlobalClass]` alt sınıf yazar, ayarlarını export alanı olarak ekler; inspector'ın "Yeni …" menüsünde çıkar. Resource paylaşıldığı için durum tutmaz.
+- `Snapshot` Custom'da da görünür (**kullanıcı kararı**): açık → uygulamada bir kez; kapalı → Instant'ta o modifier'dan hemen önce, periyotta her çalıştırmada. Süreli/sonsuzda bir kez hesaplanır, takip yok (hesabın hangi attribute'lara baktığı bilinmez). Süre ve periyot her zaman bir kez.
+
+### Execution
+- `EffectData.Executions` (`ExecutionCalculation[]`, grup `Modifiers`): yalnızca Instant ve periyodik effect'te; diğerlerinde gizli ve yok sayılır (Unreal gibi). Boş elemanlar atlanır.
+- `public abstract void Execute(in CalculationContext context, ExecutionOutput output)`; `ExecutionOutput.AddModifier(AttributeId, ModifierOp, float)`: Base'e uygulanacak değişiklik.
+- Sıra (Unreal gibi): effect'in modifier'ları → her execution için `Execute`, dönünce çıktıları sırayla `ExecuteModifier` (aynı `ModifierSource`, yani `PostEffectExecute` ve `ModifierApplied` effect'i görür) → `EffectExecuted`. Execution modifier'ların yazdığı değerleri görür; kendi çıktıları hesap bitince uygulanır.
+- Yığın: çıktı otomatik çarpılmaz, execution `context.StackCount`'a bakar.
+- Bellek: `ExecutionOutput` iç içe çağrı derinliği başına havuzdan (dinleyici çıktı uygulanırken başka execution çalıştırabilir); ısındıktan sonra 0 allocation.
+
+```csharp
+// Zırhla azalan hasar: Damage meta attribute'una yazar, PostEffectExecute Health'e geçirir.
+[GlobalClass]
+public partial class ArmorDamage : ExecutionCalculation
+{
+    private static readonly AttributeId AttackPower = AttributeRegistry.Request("CombatSet.AttackPower");
+    private static readonly AttributeId Armor = AttributeRegistry.Request("CombatSet.Armor");
+    private static readonly AttributeId Damage = AttributeRegistry.Request("CombatSet.Damage");
+
+    [Export] public float ArmorConstant { get; set; } = 100f;
+
+    public override void Execute(in CalculationContext context, ExecutionOutput output)
+    {
+        float armor = context.GetTargetValue(Armor);
+        output.AddModifier(Damage, ModifierOp.Add, context.GetSourceValue(AttackPower) * ArmorConstant / (ArmorConstant + armor));
+    }
+}
+```
+
+### Süregelen tag şartları (inhibition) ve kaldırma şartı
+- Grup `Tags`: `OngoingRequiredTags` (hepsi), `OngoingBlockedTags` (biri), `RemovalTags` (biri); Instant'ta gizli.
+- `RemovalTags` (**kullanıcı kararı**, Unreal `RemovalTagRequirements`): hedefe bunlardan biri gelince effect tüm yığınıyla kaldırılır (etkisizken de). Hedefte zaten varsa uygulanmaz (`None`).
+- Uygulama şartları uygulanıp uygulanmayacağını belirler; süregelen şart tutmuyorsa effect yine eklenir, **etkisiz** başlar (Unreal gibi).
+- Etkisizken: modifier'lar `Aggregator`'dan çıkar, granted tag'ler geri alınır, periyot çalıştırmaları atlanır (timer işler; etkinleşince periyot sıfırlanmaz, Unreal varsayılanı `NeverReset`), bağışıklık vermez. Süre işler; yığın eklenip düşebilir, takip edilen attribute'lar magnitude'u güncellemeye devam eder (yalnızca saklanır).
+- Etkinleşince modifier'lar güncel yığınlı değerle yeniden eklenir (`Aggregator`'da sona geçer), tag'ler geri verilir.
+- `ActiveEffect.IsInhibited`, olay `InhibitionChanged(ActiveEffect, bool inhibited)`.
+- Dinleme: ilk şartlı effect (süregelen veya kaldırma şartı olan) eklenince `TagCountContainer.PresenceChanged`'e abone olunur; yalnızca şartlı effect'ler (ayrı liste) yeniden kontrol edilir, şartsızlara maliyet yok.
+- İç içe: etkisizleştirme tag kaldırır, bu da yeni `PresenceChanged` doğurur. Kontrol sürerken gelen değişiklik yalnızca "tekrar kontrol" işaretler; en fazla 8 tur, sonra uyarı (kendi tag'iyle kendini engelleyen effect sonsuz döngüye girmez).
+
+### Bağışıklık
+- Grup `Tags`: `ImmunityTags` (Instant'ta gizli). Effect aktif ve etkinken `AssetTags`'ı bunlardan biriyle eşleşen (hiyerarşik: `Effect.Damage`, `Effect.Damage.Fire`'ı da tutar) yeni effect'ler uygulanmaz. Aynı `EffectData` muaf (kendi yığını/yenilemesi engellenmez).
+- Engellenince `None` ve olay `ImmunityBlocked(EffectSpec blocked, ActiveEffect immunity)`.
+- Aktif effect'leri kaldırmaz; temizlemek için aynı effect'e `RemoveEffectsWithTags`.
+- Maliyet: bağışıklık veren aktif effect yoksa kontrol atlanır.
+
+### Akış (Faz 1 adımlarının yerine)
+1. Spec/Data null → hata. Uygulama tag şartları veya `RemovalTags` hedefte → `None`. Bağışıklık → `ImmunityBlocked`, `None`. HasDuration ve süre ≤ 0 → `None`.
+2. `RemoveEffectsWithTags`, sonra yığın (Faz 2).
+3. Instant: modifier'lar → execution'lar → `EffectExecuted`.
+4. Süreli/sonsuz: `ActiveEffect`; süregelen şart tutmuyorsa modifier ve tag atlanır (etkisiz); timer'lar; `EffectAdded`; periyodik + `ExecuteOnApplication` + etkin → bir çalıştırma.
+5. Periyot: etkisizse atlanır; değilse modifier'lar → execution'lar → `EffectExecuted`.
+
+### Test
+- Custom: değer, boş `Calculation` → 0 + hata, snapshot davranışı, süre/periyot olarak kullanım.
+- Execution: Instant ve periyotta çıktı, sıra (modifier → execution), `PostEffectExecute`'ta kaynak, yığın sayısı, iç içe execution, ısındıktan sonra 0 allocation.
+- Inhibition: etkisiz başlama, tag gelince/gidince modifier ve tag, periyot atlama, süre işler, etkisizken yığın, kendini engelleyen effect.
+- Kaldırma şartı: tag gelince kaldırma (etkisizken de), tag zaten varken uygulanmama.
+- Bağışıklık: engelleme ve olay, hiyerarşik eşleşme, etkisizken vermez, kendi yığını, aktif effect'e dokunmaz.
+- Editörde: abstract `[GlobalClass]` sınıfların "Yeni …" menüsü (Godot 4.7), yeni alanların gizlenmesi.
+
+### Uygulama sırası
+1. `CalculationContext`, `EffectSpec` ekleri. 2. `MagnitudeCalculation`, `MagnitudeType.Custom`. 3. `ExecutionCalculation`, `ExecutionOutput`, `EffectData.Executions`. 4. Inhibition, `RemovalTags`. 5. Bağışıklık. 6. Testler, `Effect.md`/`ARCHITECTURE.md`.
 
 ## Bu Planın Dışında
 ASC (container'ları sahiplenir, başlangıç effect'leri), Cooldown (HasDuration + `Cooldown.X` tag'i, kalan süre sorgusu), Cost ve seviye ölçekleme (Ability planı).
@@ -181,6 +260,7 @@ ActiveEffectContainer ──► ActiveEffect ──► EffectSpec ──► Effe
         └──► TimerManager, TimerHandle (Timers)
 ```
 Attribute katmanı effect sınıflarını bilmez (`ModifierSource.Data` tipi `Resource`).
+Faz 3'te effect katmanı içinde tip döngüsü var: `EffectData`/`Magnitude` → `ExecutionCalculation`/`MagnitudeCalculation` → `CalculationContext` → `EffectSpec` → `EffectData`. Hesabın spec'e (SetByCaller, Instigator) erişmesi için gerekli, Unreal'da da böyle; katmanlar arasında döngü yok (**kullanıcı kararı**, 2026-11-17).
 
 ## Performans
 - Zaman işi `TimerManager`'da: O(log n) kurma/durdurma, kare başına yalnızca süresi dolan timer'lar.

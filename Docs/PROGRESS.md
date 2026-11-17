@@ -13,13 +13,14 @@
 - `Magnitude.Snapshot` (kapalıysa her kullanımda okunur, süreli effect attribute'u takip eder), Pre/PostMultiplyAdd kaldırıldı; `Aggregator.SetMagnitude`, `UpdateModifier`, `ModifierEventKind.Updated`; 11 test — [Claude, 2026-11-17]
 
 - Effect Faz 2: stacking (`ByTarget`/`BySource`, limit, süre/periyot yenileme, bitiş politikası); 18 test — [Claude, 2026-11-17]
+- Effect Faz 3 planı (`Systems/Effect.md` → Faz 3), kullanıcı onaylı — [Claude, 2026-11-17]
 
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla, `Systems/Effect.md` → Uygulama Sırası)
 - [ ] Editörde `EffectData`/`Modifier`/`Magnitude` inspector'ını dene (gruplar, gizlenen alanlar, menüler, `.tres` kaydı); headless testte denenemiyor
-- [ ] Effect Faz 3: özel magnitude / execution, süregelen tag şartları, bağışıklık
+- [ ] Effect Faz 3: özel magnitude / execution, süregelen tag şartları, kaldırma şartı, bağışıklık (plan hazır)
 - [ ] Ability, Cooldown, AbilityTask, ASC, örnek sahne (Fireball)
 
 ## Notlar
@@ -28,3 +29,4 @@
 - `Attribute.md`'nin gövdesi Faz 0 öncesini anlatıyor; bir sonraki Attribute işinde güncellenmeli.
 - Ana sahne (`run/main_scene`) yok; örnek sahne eklenince proje kökündeki `project.godot`'a girilmeli.
 - Resource tabanlı attribute set fikri ertelendi (`Systems/Attribute.md` → İleride).
+- RULES "döngüsel bağımlılık yasak" ile Faz 3'teki katman içi tip döngüsü (`EffectData` → hesaplama → `CalculationContext` → `EffectSpec`) kullanıcı kararıyla kabul edildi (`Effect.md` → Bağımlılıklar).

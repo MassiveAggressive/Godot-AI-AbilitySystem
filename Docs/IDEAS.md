@@ -9,7 +9,9 @@
 - **Uygulanma şansı:** `%X ihtimalle uygulan`.
 - **Seviye ve eğri:** effect seviyesi; magnitude'un seviyeye göre eğriden okunması (Unreal `ScalableFloat`). Ability seviyesiyle birlikte düşünülmeli.
 - **Modifier başına tag şartı:** modifier yalnızca kaynakta/hedefte belirli tag'ler varken geçerli.
-- **Ayrı tag şartları:** kaldırma şartı (tag gelince effect silinir) ve süregelen şart (Faz 3 inhibition) ayrı alanlar; şu an yalnızca uygulama şartları var.
+- **Etkinleşince periyot politikası:** etkisiz effect tekrar etkinleşince periyodu sıfırlama veya hemen çalıştırıp sıfırlama (Unreal `ResetPeriod`/`ExecuteAndResetPeriod`); Faz 3'te yalnızca `NeverReset`.
+- **Kaynak tag'ine göre bağışıklık:** uygulayanın tag'lerine bakan bağışıklık (ör. düşman takımından gelenlere); Faz 3'te yalnızca gelen effect'in `AssetTags`'ı.
+- **Custom magnitude takibi:** hesaplama sınıfı baktığı attribute'ları bildirir, süreli effect'te AttributeBased gibi takip edilir; Faz 3'te süreli effect'te bir kez hesaplanır.
 - **Dinamik tag'ler:** spec üzerinde çalışma anında effect'e asset/granted tag ekleme.
 - **Zengin effect context:** vuruş sonucu, kaynak nesne gibi ek bilgi taşıyan paket (şu an `Instigator`, `Causer`, ASC).
 - **Effect ile ability verme.**
