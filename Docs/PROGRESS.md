@@ -15,13 +15,15 @@
 - Effect Faz 2: stacking (`ByTarget`/`BySource`, limit, süre/periyot yenileme, bitiş politikası); 18 test — [Claude, 2026-11-17]
 - Effect Faz 3 planı (`Systems/Effect.md` → Faz 3), kullanıcı onaylı — [Claude, 2026-11-17]
 - Effect Faz 3: Custom magnitude (`MagnitudeCalculation`), execution (`ExecutionCalculation`, `ExecutionOutput`), `CalculationContext`, inhibition, `RemovalTags`, bağışıklık; 60 test — [Claude, 2026-11-17]
+- Editör denemesi (kullanıcı): gruplar, gizlenen alanlar, tag ve attribute menüleri, `Calculation` ve `Executions` menüleri çalışıyor; `[Tool]` olmayan hesaplama alt sınıfları için `Resource` tipli export ile düzeltildi — [Claude, 2026-11-17]
+- Örnek sınıflar proje kökünde `Resource/` altında: `CombatSet`, `ArmorDamage`, `MissingHealthHeal` (repoya girmez) — [Claude, 2026-11-17]
 
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla, `Systems/Effect.md` → Uygulama Sırası)
-- [ ] Editörde `EffectData`/`Modifier`/`Magnitude` inspector'ını dene (gruplar, gizlenen alanlar, menüler, `.tres` kaydı; Faz 3: `Executions`, `Calculation`, yeni tag alanları, soyut sınıfların "Yeni …" menüsünde gizlenmesi); headless testte denenemiyor
-- [ ] Ability, Cooldown, AbilityTask, ASC, örnek sahne (Fireball)
+- [ ] Kullanıcı: Custom magnitude ve execution seçili bir `EffectData`'yı `.tres` olarak kaydedip yeniden aç, seçimler korunuyor mu kontrol et
+- [ ] Ability, Cooldown, AbilityTask, ASC, örnek sahne (Fireball): önce `Systems/Ability.md` planı, kullanıcı onayıyla
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
@@ -29,4 +31,6 @@
 - `Attribute.md`'nin gövdesi Faz 0 öncesini anlatıyor; bir sonraki Attribute işinde güncellenmeli.
 - Ana sahne (`run/main_scene`) yok; örnek sahne eklenince proje kökündeki `project.godot`'a girilmeli.
 - Resource tabanlı attribute set fikri ertelendi (`Systems/Attribute.md` → İleride).
+- Editörde `[Tool]` olmayan `[GlobalClass]` alt sınıf yalnızca yer tutucu `Resource` olur; alt sınıf beklenen export alanları `Resource` tipinde tutulup çalışma anında cast edilir (`Magnitude.Calculation`, `EffectData.Executions`).
+- Faz 3 testleri, `Resource` tipine geçişten sonra yeniden çalıştırılmadı (yalnızca derleme).
 - RULES "döngüsel bağımlılık yasak" ile Faz 3'teki katman içi tip döngüsü (`EffectData` → hesaplama → `CalculationContext` → `EffectSpec`) kullanıcı kararıyla kabul edildi (`Effect.md` → Bağımlılıklar).
