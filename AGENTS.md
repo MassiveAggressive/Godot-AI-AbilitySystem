@@ -1,22 +1,15 @@
-# AGENTS.md — Tüm Yapay Zekalar İçin Zorunlu Talimat
+# AGENTS.md — AbilitySystem
 
-Bu repo **AbilitySystem** Godot C# addon'udur (Unreal GAS benzeri). Projede birden fazla yapay zeka çalışıyor.
-Tag sistemi ayrı bir addon ve ayrı bir repodur: `addons/Tags/` (Godot-AI-Tags). AbilitySystem onu kullanır, tersi yoktur.
+Godot 4 C# addon, Unreal GAS benzeri. Namespace `AbilitySystem`. Kullandığı addon'lar: `Tags` (`using Tags;`), ileride `Timers`. Onlar bu addon'u bilmez. Birden fazla yapay zeka çalışıyor.
 
-**Herhangi bir şey yapmadan önce sırayla oku:**
+## Kurallar (özet; kod/sahne yazmadan önce `Docs/RULES.md`)
+- `Gameplay` ön eki yok. Tek sorumluluk; aşırı soyutlama, aşırı bağımlılık ve döngüsel bağımlılık yok.
+- Her sınıf `addons/AbilitySystem/<Sınıf>/` klasöründe. Projeye özel veri proje kökündeki `Resource/`'da.
+- Sahne: düğüm doğrudan özel sınıftan yaratılır (`script` + `metadata/_custom_type_script`), UID `.cs.uid`'den.
+- Hot-path'te allocation/LINQ/boxing yok; mümkünse saf C#.
+- Git bu klasörde çalışır. `Test/` kullanıcıya ait, dokunma. Kapsam dışı değişiklik yok, kuralları kendi başına değiştirme.
 
-1. [`Docs/RULES.md`](Docs/RULES.md) — bağlayıcı kurallar
-2. [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) — mimari
-3. [`Docs/PROGRESS.md`](Docs/PROGRESS.md) — yapılanlar / yapılmakta olanlar / yapılacaklar
-
-## Hatırlatma (özet — ayrıntı RULES.md'de)
-- İsimlerde **`Gameplay` ön eki yok**.
-- Modüler, okunaklı; **aşırı soyutlama ve aşırı bağımlılık yok**; tek sınıf her işi yapmaz.
-- **Her sınıf `addons/AbilitySystem/<Sinif>/` klasöründe** (ara `Core/`, `Assets/` klasörü yok), sahnesi, varlıkları ve addon ile gelen resource dosyaları da aynı klasörde. Projeye özel resource verisi proje kökündeki `Resource/` klasöründe (resource sınıfı addon içinde).
-- **Sahne kuralı:** Önce `Node2D`/`Node`/`Control` ekleyip sonra script bağlamak **yasak**. Düğüm doğrudan özel sınıftan, `script = ExtResource(...)` + `metadata/_custom_type_script = "uid://..."` ile yaratılır. UID'yi `.cs.uid` dosyasından al, uydurma.
-- **Performans önemli:** hot-path'te allocation/LINQ/boxing yok.
-- Mümkün olduğunca **saf C#** (`List`, `Dictionary`, `event`, `struct`); gereksiz yere Godot `Array`/`Dictionary`/`Variant`/`Signal` kullanma.
-- Namespace `AbilitySystem`; tag'ler için `using Tags;`.
-- Git komutları bu klasörde çalışır; proje kökü repo değildir. **`Test/` klasörü kullanıcıya aittir, dokunma.**
-- `Docs/PROGRESS.md`'yi güncel tut; başkasının "Yapılıyor" işine dokunma.
-- Kapsam dışı değişiklik yapma; kuralları kendi başına değiştirme.
+## Dokümanlar (yalnızca gerekince oku)
+- `Docs/PROGRESS.md`: işe başlarken "Yapılıyor"a ekle, bitince güncelle; başkasının işine dokunma.
+- `Docs/ARCHITECTURE.md`: sınıf haritası, bağımlılık yönü.
+- `Docs/Systems/<Sistem>.md`: yalnızca üzerinde çalışılan sistemin planı.
