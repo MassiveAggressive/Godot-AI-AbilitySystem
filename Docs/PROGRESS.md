@@ -7,12 +7,12 @@
 - Attribute sistemi (`Systems/Attribute.md`), 57 test
 - Effect planı (`Systems/Effect.md`) — [Claude, 2026-11-17]
 - Effect Faz 0: `Aggregator` → `AttributeSet`, `ModifierSource`, `ModifierEventData`, `ExecuteModifier`, `PostEffectExecute`, `ModifierApplied`; 40 test — [Claude, 2026-11-17]
+- Timers addon'u yazıldı (ayrı repo, `addons/Timers/`); effect'ler statik `TimerManager`'ı kullanacak — [Claude, 2026-11-17]
 
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla, `Systems/Effect.md` → Uygulama Sırası)
-- [ ] Timers addon'u (ayrı repo, Godot-AI-Timers): `TimerManager`, `TimerHandle`
 - [ ] Effect Faz 1 (Tags'te `TagContainer.BuildTagOptions` public)
 - [ ] Effect Faz 2: stacking, `AttributeBased` magnitude
 - [ ] Effect Faz 3: özel magnitude / execution, süregelen tag şartları, bağışıklık

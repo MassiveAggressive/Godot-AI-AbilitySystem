@@ -79,13 +79,9 @@ protected override void PostEffectExecute(in ModifierEventData data)
 }
 ```
 
-## Timers Addon'u (ayrı repo; güncel plan `addons/Timers/Docs/Timers.md`, çelişkide o geçerli)
+## Zaman: Timers Addon'u (ayrıntı `addons/Timers/Docs/Timers.md`)
+- Statik `TimerManager.Start/Stop/GetRemaining` (autoload ilerletir, oyun duraklayınca durur).
 - Süre timer'ının callback'inde periyot timer'ının kalan süresi ≤ 1e-4 ise son periyot effect kalkmadan çalıştırılır (float girdilerde tam eşitlik garanti değil).
-- `addons/Timers/`, Godot-AI-Timers, namespace `Timers`, bağımsız.
-- `TimerManager` (düz C#): `TimerHandle Start(float delay, Action callback, float interval = 0)` (`interval > 0` tekrarlı), `bool Stop(TimerHandle)`, `bool IsActive`, `float GetRemaining`, `Pause`/`Resume`, `void Advance(float delta)`.
-- İç yapı: bitiş zamanına göre min-heap; zaman `double` (uzun oturumda float kayması yok). Aynı anda bitenler başlatılma sırasıyla çalışır. Büyük delta'da tekrarlı timer kaçırdığı her tetiklemeyi sırayla yapar. Callback içinde timer kurmak/durdurmak güvenli. `Advance`'te allocation yok.
-- `TimerHandle`: `readonly struct` (id + nesil; durmuş handle yanlış timer'ı durdurmaz).
-- `TimerRunner` (autoload `Node`): global bir `TimerManager`'ı `_Process`'te ilerletir (oyun duraklayınca durur). Aktöre özel zaman (yavaşlatma) gerekirse kendi manager'ı olabilir.
 - Effect kullanımı: süre → tek timer, periyot → tekrarlı timer. Periyot timer'ı süreden önce kurulur, böylece aynı anda düşen son periyot effect kalkmadan çalışır. Callback delegeleri `ActiveEffect` oluşturulurken bir kez bağlanır.
 
 ## Faz 1 — Effect Sınıfları
@@ -122,7 +118,7 @@ protected override void PostEffectExecute(in ModifierEventData data)
 - Internal: `ModifierSource Source` (uygulamada bir kez), `float[] _magnitudes`, süre ve periyot `TimerHandle`'ları, `IsRemoved`.
 
 ### ActiveEffectContainer
-- `ActiveEffectContainer(AttributeContainer attributes, TagCountContainer tags, TimerManager timers)`
+- `ActiveEffectContainer(AttributeContainer attributes, TagCountContainer tags)`; zaman için statik `TimerManager`.
 - `EffectHandle Apply(EffectSpec spec)` (başarısız → `None`; Instant'ta geçerli ama listede olmayan handle), `bool RemoveEffect(EffectHandle)`, `int RemoveEffectsWithTags(TagContainer)`, `Count`, indexer, `Get(EffectHandle)`.
 - Olaylar: `EffectAdded(ActiveEffect)`, `EffectRemoved(ActiveEffect)`, `EffectExecuted(EffectSpec)`. Attribute düzeyindeki ayrıntı için `AttributeContainer.ModifierApplied`.
 
@@ -140,7 +136,7 @@ protected override void PostEffectExecute(in ModifierEventData data)
 
 ### Kullanım
 ```csharp
-var effects = new ActiveEffectContainer(attributes, tags, TimerRunner.Manager);
+var effects = new ActiveEffectContainer(attributes, tags);
 var hit = new EffectSpec(fireballDamage, instigator: caster);
 hit.SetCallerMagnitude(dataDamage, 35f);  // dataDamage yüklemede bir kez TagRegistry.Request ile
 effects.Apply(hit);
@@ -174,7 +170,7 @@ Attribute katmanı effect sınıflarını bilmez (`ModifierSource.Data` tipi `Re
 
 ## Test
 Faz 0: mevcut 57 test (sourceId → `ModifierSource`), olay türleri ve sırası (hook → olay), container olay yayını, 0 allocation.
-Faz 1: her op'ta Instant, süreli ekleme/geri alma, periyot 6/5 kuralı ve büyük delta, tag şartları, `RemoveEffectsWithTags`, SetByCaller eksik → 0, iç içe kaldırma. `EffectData`/`Modifier` Godot Resource olduğundan ya Godot API'si stub'lanır ya headless Godot.
+Faz 1: her op'ta Instant, süreli ekleme/geri alma, periyot 6/5 kuralı ve büyük delta, tag şartları, `RemoveEffectsWithTags`, SetByCaller eksik → 0, iç içe kaldırma. Testler headless Godot'ta çalışır.
 
 ## Uygulama Sırası
 1. Faz 0: `ModifierSource`, `ModifierEventData` (+ `ModifierEventKind`, `ModifierEventHandler`), `Aggregator.EvaluateSingle`, `AttributeValue`/`AttributeSet`/`AttributeContainer` değişiklikleri, testler, `Attribute.md` güncellemesi.
