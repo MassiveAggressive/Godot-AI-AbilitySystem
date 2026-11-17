@@ -74,9 +74,9 @@ public partial class EffectData : Resource
     [Export]
     public bool RefreshDurationOnStack { get; set; } = true;
 
-    /// <summary>A new application starts the period again.</summary>
+    /// <summary>A new application starts the period again (Unreal's default). Off, the damage rhythm is left alone.</summary>
     [Export]
-    public bool ResetPeriodOnStack { get; set; }
+    public bool ResetPeriodOnStack { get; set; } = true;
 
     [Export]
     public StackExpirationPolicy StackExpiration { get; set; }

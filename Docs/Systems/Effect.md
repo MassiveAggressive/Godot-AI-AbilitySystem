@@ -162,7 +162,7 @@ effects.RemoveEffect(haste);
 ```
 
 ## Faz 2 — Stacking (uygulandı, 18 test)
-- `EffectData` grubu `Stacking` (Instant'ta gizli): `StackingType` (`None`/`ByTarget`/`BySource` = her `Instigator` için ayrı), `StackLimit` (0 = sınırsız), `RefreshDurationOnStack = true`, `ResetPeriodOnStack`, `StackExpiration` (`ClearStack` / `RemoveOneAndRefresh` / `RefreshDuration`).
+- `EffectData` grubu `Stacking` (Instant'ta gizli): `StackingType` (`None`/`ByTarget`/`BySource` = her `Instigator` için ayrı), `StackLimit` (0 = sınırsız), `RefreshDurationOnStack = true`, `ResetPeriodOnStack = true` (Unreal varsayılanı; **kullanıcı kararı**), `StackExpiration` (`ClearStack` / `RemoveOneAndRefresh` / `RefreshDuration`).
 - Yığına eklenen uygulama mevcut handle'ı döner; yığın kendi magnitude ve süresini korur (Unreal gibi), yeni spec yalnızca sayıyı artırır. Sınırdayken yalnızca yeniler. Yığın eklenince periyodik effect ayrıca çalışmaz.
 - Yığın `n`: `Aggregator.StackMagnitude` → `Add`/`AddFinal` `m × n`, `Multiply`/`Divide` `1 + (m − 1) × n`, `MultiplyCompound` `mⁿ`, `Override` `m`. Modifier'lar sırası korunarak güncellenir (`UpdateModifier`); periyodik effect her çalıştırmada yığınlı değeri kullanır.
 - `RemoveEffect(handle, stacks = hepsi)`, `ActiveEffect.StackCount`, olay `StackCountChanged(effect, eski, yeni)`. Yığın ekleme 0 allocation.
