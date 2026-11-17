@@ -12,4 +12,5 @@ Godot 4 C# addon, Unreal GAS benzeri. Namespace `AbilitySystem`. Kullandığı a
 ## Dokümanlar (yalnızca gerekince oku)
 - `Docs/PROGRESS.md`: işe başlarken "Yapılıyor"a ekle, bitince güncelle; başkasının işine dokunma.
 - `Docs/ARCHITECTURE.md`: sınıf haritası, bağımlılık yönü.
+- `Docs/IDEAS.md`: karara bağlanmamış ileride eklenebilecek özellikler; yeni fikir çıkınca oraya yaz.
 - `Docs/Systems/<Sistem>.md`: yalnızca üzerinde çalışılan sistemin planı.
