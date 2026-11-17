@@ -49,6 +49,12 @@ public sealed class ActiveEffect
     /// <summary>True once the effect expired or was removed; a kept reference then only describes the past.</summary>
     public bool IsRemoved { get; internal set; }
 
+    /// <summary>
+    /// True while the target does not meet <see cref="EffectData.OngoingRequiredTags"/>/<see cref="EffectData.OngoingBlockedTags"/>:
+    /// the effect stays and its duration runs, but its modifiers, granted tags, periods and immunity are off.
+    /// </summary>
+    public bool IsInhibited { get; internal set; }
+
     internal ModifierSource Source { get; }
 
     /// <summary>Per modifier and per stack (before <see cref="StackCount"/> is applied).</summary>

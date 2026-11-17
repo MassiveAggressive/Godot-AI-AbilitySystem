@@ -14,13 +14,13 @@
 
 - Effect Faz 2: stacking (`ByTarget`/`BySource`, limit, süre/periyot yenileme, bitiş politikası); 18 test — [Claude, 2026-11-17]
 - Effect Faz 3 planı (`Systems/Effect.md` → Faz 3), kullanıcı onaylı — [Claude, 2026-11-17]
+- Effect Faz 3: Custom magnitude (`MagnitudeCalculation`), execution (`ExecutionCalculation`, `ExecutionOutput`), `CalculationContext`, inhibition, `RemovalTags`, bağışıklık; 60 test — [Claude, 2026-11-17]
 
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla, `Systems/Effect.md` → Uygulama Sırası)
-- [ ] Editörde `EffectData`/`Modifier`/`Magnitude` inspector'ını dene (gruplar, gizlenen alanlar, menüler, `.tres` kaydı); headless testte denenemiyor
-- [ ] Effect Faz 3: özel magnitude / execution, süregelen tag şartları, kaldırma şartı, bağışıklık (plan hazır)
+- [ ] Editörde `EffectData`/`Modifier`/`Magnitude` inspector'ını dene (gruplar, gizlenen alanlar, menüler, `.tres` kaydı; Faz 3: `Executions`, `Calculation`, yeni tag alanları, soyut sınıfların "Yeni …" menüsünde gizlenmesi); headless testte denenemiyor
 - [ ] Ability, Cooldown, AbilityTask, ASC, örnek sahne (Fireball)
 
 ## Notlar

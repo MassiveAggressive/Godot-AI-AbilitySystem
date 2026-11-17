@@ -7,7 +7,8 @@ Sistem ayrıntıları ve kararları: `Docs/Systems/<Sistem>.md`. Burada yalnızc
 |---|---|---|
 | `AttributeValue`, `AttributeSet`, `AttributeId`, `AttributeRegistry`, `AttributeContainer`, `Aggregator`, `ModifierOp`, `ModifierEvaluationChannel` | FGameplayAttributeData, UAttributeSet, FAggregator… | Uygulandı (`Attribute.md`) |
 | `ModifierSource`, `ModifierEventData` | FGameplayEffectModCallbackData | Uygulandı (`Effect.md` Faz 0) |
-| `EffectData`, `Modifier`, `Magnitude` (Resource'lar), `EffectSpec`, `EffectHandle`, `ActiveEffect`, `ActiveEffectContainer` | UGameplayEffect, FGameplayModifierInfo, FGameplayEffectSpec, FActiveGameplayEffect… | Faz 1 uygulandı; Faz 2–3 taslak (`Effect.md`) |
+| `EffectData`, `Modifier`, `Magnitude` (Resource'lar), `EffectSpec`, `EffectHandle`, `ActiveEffect`, `ActiveEffectContainer` | UGameplayEffect, FGameplayModifierInfo, FGameplayEffectSpec, FActiveGameplayEffect… | Faz 1–3 uygulandı (`Effect.md`) |
+| `MagnitudeCalculation`, `ExecutionCalculation` (soyut Resource'lar), `CalculationContext`, `ExecutionOutput` | UGameplayModMagnitudeCalculation, UGameplayEffectExecutionCalculation | Uygulandı (`Effect.md` Faz 3) |
 | `AbilityData` (Resource), `Ability`, `AbilitySpec`, `AbilityTask`, `AbilityEvent` | UGameplayAbility… | Planlanacak |
 | `Cooldown` | Cooldown GE | Planlanacak (HasDuration effect + tag) |
 | `AbilitySystemComponent` | ASC | En son; alt sistemleri birleştirir, kendisi mantık taşımaz |

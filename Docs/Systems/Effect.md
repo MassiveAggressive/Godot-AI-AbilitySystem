@@ -1,6 +1,6 @@
 # Effect Sistemi — Plan
 
-> Durum: Faz 0, 1 ve 2 **uygulandı** (2026-11-17); Faz 3 planı onaylandı. Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation.
+> Durum: Faz 0–3 **uygulandı** (2026-11-17). Faz 1: Godot içinde (headless) 48 test; hazır spec ile Instant uygulama (2 modifier, biri AttributeBased) ≈ 326 ns, Instant uygulama ve periyodik tick 0 allocation.
 >
 > Uygulamada netleşenler (Faz 1):
 > - `EffectSpec.SetCallerMagnitude` spec'i döner (zincirleme): `effects.Apply(new EffectSpec(data, caster).SetCallerMagnitude(tag, 35f))`. Constructor: `(data, instigator, causer, instigatorAbilitySystem)`.
@@ -167,8 +167,16 @@ effects.RemoveEffect(haste);
 - Yığın `n`: `Aggregator.StackMagnitude` → `Add`/`AddFinal` `m × n`, `Multiply`/`Divide` `1 + (m − 1) × n`, `MultiplyCompound` `mⁿ`, `Override` `m`. Modifier'lar sırası korunarak güncellenir (`UpdateModifier`); periyodik effect her çalıştırmada yığınlı değeri kullanır.
 - `RemoveEffect(handle, stacks = hepsi)`, `ActiveEffect.StackCount`, olay `StackCountChanged(effect, eski, yeni)`. Yığın ekleme 0 allocation.
 
-## Faz 3 — Hesaplama, Süregelen Şartlar, Bağışıklık (plan onaylandı, 2026-11-17)
+## Faz 3 — Hesaplama, Süregelen Şartlar, Bağışıklık (uygulandı, 60 test)
 Karşılığı: Unreal `UGameplayModMagnitudeCalculation`, `UGameplayEffectExecutionCalculation`, `OngoingTagRequirements` (inhibition), `UImmunityGameplayEffectComponent`. Attribute katmanı değişmez.
+
+> Uygulamada netleşenler:
+> - `CalculationContext` constructor'ı public (`targetTags`, `stackCount` isteğe bağlı): kullanıcı kendi hesabını container'sız deneyebilir.
+> - Etkisiz başlayan effect `InhibitionChanged` tetiklemez; `EffectAdded`'da `IsInhibited`'a bakılır.
+> - Şartlı effect, kurulumu (modifier, tag) bitince izlenmeye başlar ve hemen bir kez kontrol edilir; yarım uygulanmış effect etkisizleşmez. Kontrol listenin kopyası üzerinde yürür.
+> - Tag dinlemesi son şartlı effect kalkınca bırakılır.
+> - Periyot ortasında effect kaldırılsa da o periyodun kalan modifier ve execution çıktıları uygulanır (Faz 1 davranışı).
+> - Ölçüm: Instant execution ve periyodik execution 0 allocation. Godot 4.7 soyut sınıfları `is_abstract: true` kaydeder (inspector menüsü editörde denenecek).
 
 | Sınıf | Tür | Klasör |
 |---|---|---|
@@ -255,6 +263,8 @@ ASC (container'ları sahiplenir, başlangıç effect'leri), Cooldown (HasDuratio
 ## Bağımlılıklar
 ```
 ActiveEffectContainer ──► ActiveEffect ──► EffectSpec ──► EffectData ──► Modifier ──► AttributeRegistry / AttributeId / ModifierOp
+        │                                                    └──► ExecutionCalculation ──► CalculationContext, ExecutionOutput
+        │                                       Magnitude ──► MagnitudeCalculation ──► CalculationContext
         ├──► AttributeContainer ──► AttributeSet ──► Aggregator, ModifierEventData ──► ModifierSource
         ├──► TagCountContainer, TagContainer, Tag (Tags)
         └──► TimerManager, TimerHandle (Timers)

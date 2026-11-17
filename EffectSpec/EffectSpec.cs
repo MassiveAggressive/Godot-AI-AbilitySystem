@@ -41,6 +41,9 @@ public sealed class EffectSpec
     /// <summary>The applying actor's attributes, read by attribute based magnitudes with <see cref="AttributeCaptureSource.Source"/>.</summary>
     public AttributeContainer SourceAttributes { get; set; }
 
+    /// <summary>The applying actor's tags, read by custom calculations (<see cref="CalculationContext.SourceTags"/>).</summary>
+    public TagCountContainer SourceTags { get; set; }
+
     /// <summary>Sets the value of SetByCaller magnitudes keyed by <paramref name="tag"/>. Returns this spec for chaining.</summary>
     public EffectSpec SetCallerMagnitude(Tag tag, float value)
     {
@@ -78,9 +81,13 @@ public sealed class EffectSpec
 
     /// <summary>
     /// The value of <paramref name="magnitude"/> with this spec against <paramref name="target"/>, e.g. to check a
-    /// cost before activating. A missing attribute counts as 0.
+    /// cost before activating. A missing attribute counts as 0. <paramref name="targetTags"/> is passed on to custom
+    /// calculations.
     /// </summary>
-    public float CalculateMagnitude(Magnitude magnitude, AttributeContainer target)
+    public float CalculateMagnitude(Magnitude magnitude, AttributeContainer target, TagCountContainer targetTags = null) =>
+        CalculateMagnitude(magnitude, target, targetTags, 1);
+
+    internal float CalculateMagnitude(Magnitude magnitude, AttributeContainer target, TagCountContainer targetTags, int stackCount)
     {
         if (magnitude == null)
         {
@@ -98,6 +105,12 @@ public sealed class EffectSpec
                 return 0f;
             case MagnitudeType.AttributeBased:
                 return CalculateAttributeBased(magnitude, target);
+            case MagnitudeType.Custom:
+                if (magnitude.Calculation != null)
+                    return magnitude.Calculation.Calculate(new CalculationContext(this, target, targetTags, stackCount));
+
+                GD.PushError($"EffectSpec: a custom magnitude has no calculation{Where()}; 0 is used.");
+                return 0f;
             default:
                 return magnitude.Value;
         }

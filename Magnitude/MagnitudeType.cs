@@ -11,4 +11,7 @@ public enum MagnitudeType
 
     /// <summary>Coefficient × an attribute of the source or target, read once or on every use (<see cref="Magnitude.Snapshot"/>).</summary>
     AttributeBased = 2,
+
+    /// <summary>Calculated in code by <see cref="Magnitude.Calculation"/>, once or on every use (<see cref="Magnitude.Snapshot"/>).</summary>
+    Custom = 3,
 }

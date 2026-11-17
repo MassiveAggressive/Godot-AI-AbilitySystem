@@ -67,10 +67,15 @@ public partial class Magnitude : Resource
     [Export]
     public float Coefficient { get; set; } = 1f;
 
+    /// <summary>Custom: the calculation, a [GlobalClass] subclass of <see cref="MagnitudeCalculation"/>.</summary>
+    [Export]
+    public MagnitudeCalculation Calculation { get; set; }
+
     /// <summary>
-    /// AttributeBased: on, the attribute is read once when the effect is applied. Off, it is read every time the
-    /// modifier is used: right before an instant modifier runs, on every period, and whenever the attribute changes
-    /// for a duration or infinite modifier. Durations and periods are always read once.
+    /// AttributeBased and Custom: on, the value is calculated once when the effect is applied. Off, it is calculated
+    /// every time the modifier is used: right before an instant modifier runs and on every period. A duration or
+    /// infinite modifier follows its attribute when AttributeBased; a Custom one is calculated once, since what it
+    /// reads is not known. Durations and periods are always calculated once.
     /// </summary>
     [Export]
     public bool Snapshot { get; set; } = true;
@@ -117,7 +122,9 @@ public partial class Magnitude : Resource
         {
             nameof(Value) => _type == MagnitudeType.Constant,
             nameof(CallerTagName) => _type == MagnitudeType.SetByCaller,
-            nameof(BackingAttributeName) or nameof(CaptureFrom) or nameof(Coefficient) or nameof(Snapshot) => attributeBased,
+            nameof(BackingAttributeName) or nameof(CaptureFrom) or nameof(Coefficient) => attributeBased,
+            nameof(Calculation) => _type == MagnitudeType.Custom,
+            nameof(Snapshot) => attributeBased || _type == MagnitudeType.Custom,
             _ => true,
         };
 
