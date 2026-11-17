@@ -79,7 +79,8 @@ protected override void PostEffectExecute(in ModifierEventData data)
 }
 ```
 
-## Timers Addon'u (ayrı repo, ayrıntılı plan kendi `Docs/`'unda yazılacak)
+## Timers Addon'u (ayrı repo; güncel plan `addons/Timers/Docs/Timers.md`, çelişkide o geçerli)
+- Süre timer'ının callback'inde periyot timer'ının kalan süresi ≤ 1e-4 ise son periyot effect kalkmadan çalıştırılır (float girdilerde tam eşitlik garanti değil).
 - `addons/Timers/`, Godot-AI-Timers, namespace `Timers`, bağımsız.
 - `TimerManager` (düz C#): `TimerHandle Start(float delay, Action callback, float interval = 0)` (`interval > 0` tekrarlı), `bool Stop(TimerHandle)`, `bool IsActive`, `float GetRemaining`, `Pause`/`Resume`, `void Advance(float delta)`.
 - İç yapı: bitiş zamanına göre min-heap; zaman `double` (uzun oturumda float kayması yok). Aynı anda bitenler başlatılma sırasıyla çalışır. Büyük delta'da tekrarlı timer kaçırdığı her tetiklemeyi sırayla yapar. Callback içinde timer kurmak/durdurmak güvenli. `Advance`'te allocation yok.
