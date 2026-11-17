@@ -106,10 +106,10 @@ public sealed class EffectSpec
             case MagnitudeType.AttributeBased:
                 return CalculateAttributeBased(magnitude, target);
             case MagnitudeType.Custom:
-                if (magnitude.Calculation != null)
-                    return magnitude.Calculation.Calculate(new CalculationContext(this, target, targetTags, stackCount));
+                if (magnitude.Calculation is MagnitudeCalculation calculation)
+                    return calculation.Calculate(new CalculationContext(this, target, targetTags, stackCount));
 
-                GD.PushError($"EffectSpec: a custom magnitude has no calculation{Where()}; 0 is used.");
+                GD.PushError($"EffectSpec: a custom magnitude has no MagnitudeCalculation{Where()}; 0 is used.");
                 return 0f;
             default:
                 return magnitude.Value;

@@ -175,6 +175,7 @@ Karşılığı: Unreal `UGameplayModMagnitudeCalculation`, `UGameplayEffectExecu
 > - Etkisiz başlayan effect `InhibitionChanged` tetiklemez; `EffectAdded`'da `IsInhibited`'a bakılır.
 > - Şartlı effect, kurulumu (modifier, tag) bitince izlenmeye başlar ve hemen bir kez kontrol edilir; yarım uygulanmış effect etkisizleşmez. Kontrol listenin kopyası üzerinde yürür.
 > - Tag dinlemesi son şartlı effect kalkınca bırakılır.
+> - `Magnitude.Calculation` ve `EffectData.Executions` `Resource` tipinde export edilir (tür kısıtı hint ile): editörde `[Tool]` olmayan alt sınıf yalnızca yer tutucu `Resource` olur ve hesaplama tipindeki alana atanamaz (`InvalidCastException`). Tip dönüşümü çalışma anında; kullanıcı alt sınıfına `[Tool]` yazmak zorunda değil.
 > - Periyot ortasında effect kaldırılsa da o periyodun kalan modifier ve execution çıktıları uygulanır (Faz 1 davranışı).
 > - Ölçüm: Instant execution ve periyodik execution 0 allocation. Godot 4.7 soyut sınıfları `is_abstract: true` kaydeder (inspector menüsü editörde denenecek).
 

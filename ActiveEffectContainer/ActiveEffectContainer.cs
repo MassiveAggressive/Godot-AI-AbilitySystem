@@ -350,7 +350,7 @@ public sealed class ActiveEffectContainer
     /// <summary>Runs the executions in order; each one's output is applied to base values before the next runs.</summary>
     private void RunExecutions(EffectSpec spec, in ModifierSource source, int stackCount)
     {
-        ExecutionCalculation[] executions = spec.Data.Executions;
+        Resource[] executions = spec.Data.Executions;
         if (executions.Length == 0)
             return;
 
@@ -364,11 +364,11 @@ public sealed class ActiveEffectContainer
             var context = new CalculationContext(spec, _attributes, _tags, stackCount);
             for (int i = 0; i < executions.Length; i++)
             {
-                if (executions[i] == null)
+                if (executions[i] is not ExecutionCalculation execution)
                     continue;
 
                 output.Clear();
-                executions[i].Execute(context, output);
+                execution.Execute(context, output);
                 for (int j = 0; j < output.Count; j++)
                 {
                     ExecutionOutput.Entry entry = output[j];

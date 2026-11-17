@@ -68,8 +68,10 @@ public partial class Magnitude : Resource
     public float Coefficient { get; set; } = 1f;
 
     /// <summary>Custom: the calculation, a [GlobalClass] subclass of <see cref="MagnitudeCalculation"/>.</summary>
-    [Export]
-    public MagnitudeCalculation Calculation { get; set; }
+    // Typed as Resource: in the editor a subclass without [Tool] is only a placeholder Resource, which a
+    // MagnitudeCalculation property cannot hold. The hint keeps the inspector menu to MagnitudeCalculation subclasses.
+    [Export(PropertyHint.ResourceType, nameof(MagnitudeCalculation))]
+    public Resource Calculation { get; set; }
 
     /// <summary>
     /// AttributeBased and Custom: on, the value is calculated once when the effect is applied. Off, it is calculated

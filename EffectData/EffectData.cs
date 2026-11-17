@@ -21,7 +21,7 @@ public partial class EffectData : Resource
     private EffectStackingType _stackingType;
     private Magnitude _period;
     private Modifier[] _modifiers = Array.Empty<Modifier>();
-    private ExecutionCalculation[] _executions = Array.Empty<ExecutionCalculation>();
+    private Resource[] _executions = Array.Empty<Resource>();
 
     [ExportGroup("Duration")]
     [Export]
@@ -95,11 +95,13 @@ public partial class EffectData : Resource
     /// Code run after the modifiers each time the effect executes; only instant and periodic effects execute.
     /// Pick [GlobalClass] subclasses of <see cref="ExecutionCalculation"/>.
     /// </summary>
+    // Typed as Resource: in the editor a subclass without [Tool] is only a placeholder Resource, which an
+    // ExecutionCalculation array cannot hold. _ValidateProperty limits the element menu to subclasses.
     [Export]
-    public ExecutionCalculation[] Executions
+    public Resource[] Executions
     {
         get => _executions;
-        set => _executions = value ?? Array.Empty<ExecutionCalculation>();
+        set => _executions = value ?? Array.Empty<Resource>();
     }
 
     /// <summary>What this effect is (e.g. "Effect.Burn"); matched by tag based removal and immunity.</summary>
@@ -166,7 +168,14 @@ public partial class EffectData : Resource
             return;
 
         bool hasDuration = _durationType == EffectDurationType.HasDuration;
-        bool visible = property["name"].AsString() switch
+        string name = property["name"].AsString();
+        if (name == nameof(Executions))
+        {
+            property["hint"] = (int)PropertyHint.TypeString;
+            property["hint_string"] = $"{(int)Variant.Type.Object}/{(int)PropertyHint.ResourceType}:{nameof(ExecutionCalculation)}";
+        }
+
+        bool visible = name switch
         {
             nameof(Duration) => hasDuration,
             nameof(Period) or nameof(GrantedTags) or nameof(StackingType) => !IsInstant,
