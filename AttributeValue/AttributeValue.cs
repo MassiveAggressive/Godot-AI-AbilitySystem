@@ -3,15 +3,11 @@ using System;
 namespace AbilitySystem;
 
 /// <summary>
-/// Base and current value of one attribute. Current is the base run through the active modifiers
-/// (<see cref="Aggregator"/>). Values change only through the owning <see cref="AttributeSet"/>,
-/// so the set's rules run on every change.
+/// Base and current value of one attribute. Current is the base run through the active modifiers, which the owning
+/// <see cref="AttributeSet"/> keeps. Values change only through that set, so the set's rules run on every change.
 /// </summary>
 public sealed class AttributeValue
 {
-    // Created on the first modifier; attributes that are never modified allocate nothing.
-    private Aggregator _aggregator;
-
     public AttributeValue(float baseValue = 0f)
     {
         BaseValue = baseValue;
@@ -31,17 +27,6 @@ public sealed class AttributeValue
     internal void SetBase(float value) => BaseValue = value;
 
     internal void SetCurrent(float value) => CurrentValue = value;
-
-    internal void AddModifier(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel)
-    {
-        _aggregator ??= new Aggregator();
-        _aggregator.AddModifier(op, magnitude, sourceId, channel);
-    }
-
-    internal bool RemoveModifiers(int sourceId) => _aggregator != null && _aggregator.RemoveModifiers(sourceId);
-
-    /// <summary>Current value from base and modifiers, before the set's clamp.</summary>
-    internal float Evaluate() => _aggregator?.Evaluate(BaseValue) ?? BaseValue;
 
     /// <summary>
     /// Raises events against the live values, so a nested change made by a set hook never leaves listeners with a

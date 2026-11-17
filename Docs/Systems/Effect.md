@@ -1,6 +1,6 @@
 # Effect Sistemi — Plan
 
-> Durum: planlandı (2026-11-17). Faz 0–1 ayrıntılı, Faz 2–3 taslak.
+> Durum: Faz 0 **uygulandı** (2026-11-17; 40 test, ekle+kaldır+çalıştır döngüsü ≈ 213 ns, 0 allocation). Faz 1 planlandı, Faz 2–3 taslak.
 > Karşılığı: Unreal `UGameplayEffect`, `FGameplayEffectSpec`, `FActiveGameplayEffect(sContainer)`, `FGameplayModifierInfo`, `FGameplayEffectModCallbackData`.
 
 ## Amaç

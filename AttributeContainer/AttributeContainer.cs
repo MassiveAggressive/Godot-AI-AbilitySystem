@@ -15,12 +15,19 @@ public sealed class AttributeContainer
     private readonly AttributeSet[] _setsById;
     private readonly List<AttributeSet> _sets = new(2);
 
+    // Bound once so subscribing each set allocates no new delegate.
+    private readonly ModifierEventHandler _forwardModifierApplied;
+
     public AttributeContainer()
     {
         int count = AttributeRegistry.Count;
         _attributesById = new AttributeValue[count];
         _setsById = new AttributeSet[count];
+        _forwardModifierApplied = ForwardModifierApplied;
     }
+
+    /// <summary>Raised for every modifier executed, added or removed in any of the sets.</summary>
+    public event ModifierEventHandler ModifierApplied;
 
     /// <summary>Adds a set; one set per type. A set instance belongs to one container only.</summary>
     public bool Add(AttributeSet set)
@@ -61,6 +68,7 @@ public sealed class AttributeContainer
         }
 
         _sets.Add(set);
+        set.ModifierApplied += _forwardModifierApplied;
         return true;
     }
 
@@ -87,10 +95,16 @@ public sealed class AttributeContainer
         owner?.SetBaseValue(_attributesById[id.Value], value);
     }
 
-    public void AddModifier(AttributeId id, ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0)
+    public void AddModifier(AttributeId id, ModifierOp op, float magnitude, in ModifierSource source, ModifierEvaluationChannel channel = ModifierEvaluationChannel.Channel0)
     {
         AttributeSet owner = GetOwner(id);
-        owner?.AddModifier(_attributesById[id.Value], op, magnitude, sourceId, channel);
+        owner?.AddModifier(_attributesById[id.Value], op, magnitude, source, channel);
+    }
+
+    public void ExecuteModifier(AttributeId id, ModifierOp op, float magnitude, in ModifierSource source)
+    {
+        AttributeSet owner = GetOwner(id);
+        owner?.ExecuteModifier(_attributesById[id.Value], op, magnitude, source);
     }
 
     public void RemoveModifiers(AttributeId id, int sourceId)
@@ -98,6 +112,8 @@ public sealed class AttributeContainer
         AttributeSet owner = GetOwner(id);
         owner?.RemoveModifiers(_attributesById[id.Value], sourceId);
     }
+
+    private void ForwardModifierApplied(in ModifierEventData data) => ModifierApplied?.Invoke(data);
 
     private AttributeSet GetOwner(AttributeId id) => IsInRange(id) ? _setsById[id.Value] : null;
 

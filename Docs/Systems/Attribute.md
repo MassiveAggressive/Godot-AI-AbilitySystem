@@ -1,8 +1,6 @@
 # Attribute Sistemi — Plan
 
-> **Değişecek:** `Aggregator` `AttributeValue`'dan `AttributeSet`'e taşınıyor, `sourceId` yerine `ModifierSource`, yeni `PostEffectExecute` ve modifier olayları → `Effect.md` Faz 0. Uygulanınca bu dosya güncellenir.
->
-> Durum: **uygulandı** (2026-11-17). Açık kalan kararlar Claude'un önerileriyle kapatıldı; ileride değişebilir (bkz. İleride Değerlendirilecek).
+> Durum: **uygulandı** (2026-11-17). Effect Faz 0 ile değişti: `Aggregator` artık `AttributeSet`'te, modifier ekleme `ModifierSource` alıyor, `ExecuteModifier`, `PostEffectExecute` ve `ModifierApplied` olayı eklendi. Ayrıntı: `Effect.md` → Faz 0. Bu dosyada aşağıdaki bölümler hâlâ eski haliyle duruyor; çelişkide `Effect.md` geçerli. Açık kalan kararlar Claude'un önerileriyle kapatıldı; ileride değişebilir (bkz. İleride Değerlendirilecek).
 > Karşılığı: Unreal `FGameplayAttributeData`, `UAttributeSet`, `FGameplayAttribute`, `FAggregator`, `EGameplayModOp`, `EGameplayModEvaluationChannel`.
 
 ## Amaç

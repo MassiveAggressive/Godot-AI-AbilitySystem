@@ -48,6 +48,26 @@ public sealed class Aggregator
         return true;
     }
 
+    /// <summary>Result of a single modifier on <paramref name="baseValue"/>, the same as a channel holding only that modifier.</summary>
+    public static float EvaluateSingle(float baseValue, ModifierOp op, float magnitude)
+    {
+        switch (op)
+        {
+            case ModifierOp.Add:
+            case ModifierOp.AddFinal:
+                return baseValue + magnitude;
+            case ModifierOp.Multiply:
+            case ModifierOp.MultiplyCompound:
+                return baseValue * magnitude;
+            case ModifierOp.Divide:
+                return MathF.Abs(magnitude) < MinDivisor ? baseValue : baseValue / magnitude;
+            case ModifierOp.Override:
+                return magnitude;
+            default:
+                return baseValue;
+        }
+    }
+
     public float Evaluate(float baseValue)
     {
         float value = baseValue;
