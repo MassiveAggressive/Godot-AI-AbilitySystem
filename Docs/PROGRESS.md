@@ -30,12 +30,13 @@
 
 - Cue sistemi (`Systems/Cue.md`): `CueParameters`, `ICueNotify`, `CueEntry`, `CueLibrary` (proje ayarı `ability_system/cue_library_path`), `CueContainer`, `EffectData.Cues`, `AbilitySystemComponent.Cues`; 58 test — [Claude, 2026-11-18]
 - Cue editör denemesi (kullanıcı) tamam; örnek cue sahneleri ve Faz 3 testlerinin yeniden çalıştırılması kullanıcı kararıyla yapılmadı — [Claude, 2026-11-18]
+- Hedefleme planı taslağı (`Systems/Targeting.md`, Faz 1–3, açık kararlar K1–K7) — [Claude, 2026-11-18]
 
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla)
-- (boş)
+- [ ] Hedefleme (`Systems/Targeting.md`); K1–K7 kararları ve plan onayı kullanıcıdan bekleniyor
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
