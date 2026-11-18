@@ -1,6 +1,6 @@
 # Attribute Sistemi — Plan
 
-> Durum: **uygulandı** (2026-11-17). Effect Faz 0 ile değişti: `Aggregator` artık `AttributeSet`'te, modifier ekleme `ModifierSource` alıyor, `ExecuteModifier`, `PostEffectExecute` ve `ModifierApplied` olayı eklendi. Ayrıntı: `Effect.md` → Faz 0. Bu dosyada aşağıdaki bölümler hâlâ eski haliyle duruyor; çelişkide `Effect.md` geçerli. Açık kalan kararlar Claude'un önerileriyle kapatıldı; ileride değişebilir (bkz. İleride Değerlendirilecek).
+> Durum: **uygulandı** (2026-11-17), gövde 2026-11-18'de güncel koda göre düzeltildi. Effect Faz 0 ile `Aggregator` `AttributeSet`'e taşındı, modifier ekleme `ModifierSource` alıyor, `ExecuteModifier`, `UpdateModifier`, `PostEffectExecute` ve `ModifierApplied` olayı eklendi (ayrıntı ve gerekçe: `Effect.md` → Faz 0). Açık kalan kararlar Claude'un önerileriyle kapatıldı; ileride değişebilir (bkz. İleride Değerlendirilecek).
 > Karşılığı: Unreal `FGameplayAttributeData`, `UAttributeSet`, `FGameplayAttribute`, `FAggregator`, `EGameplayModOp`, `EGameplayModEvaluationChannel`.
 
 ## Amaç
@@ -16,12 +16,12 @@ Aktörün sayısal değerleri (Health, MaxHealth, Mana, MoveSpeed...):
 | Tanımlama | Attribute'lar, `AttributeSet`'ten türeyen C# sınıflarında property olarak yazılır (Unreal gibi). Yeni attribute = kod. **Kullanıcı kararı.** |
 | Veride seçim | EffectData/Modifier'da attribute `"SetAdı.AttributeAdı"` (ör. `CombatSet.Health`) string'i olarak açılır menüden seçilir; menü editörde reflection ile dolar. İlk kullanımda bir kez `AttributeId`'ye çevrilir. |
 | Modifier işlemleri | `Add`, `Multiply`, `Divide`, `MultiplyCompound`, `AddFinal`, `Override` (Unreal 5.x ile aynı küme). `Multiply` toplanır (iki +%50 → ×2.0), `MultiplyCompound` çarpılır (iki +%50 → ×2.25). **Kullanıcı kararı.** |
-| Hesaplama | Ayrı bir `Aggregator` sınıfı modifier'ları toplar ve sonucu hesaplar; `AttributeValue` sadece Base/Current ve olayları tutar. **Kullanıcı kararı.** |
+| Hesaplama | Ayrı bir `Aggregator` sınıfı modifier'ları toplar ve sonucu hesaplar; `AttributeValue` sadece Base/Current ve olayları tutar. Aggregator'ları `AttributeSet` tutar (attribute başına, ilk modifier'da oluşur). **Kullanıcı kararı.** |
 | Kanallar | `ModifierEvaluationChannel` (`Channel0`–`Channel9`): kanallar sırayla hesaplanır, her kanalın sonucu bir sonrakinin Base'idir. Varsayılan `Channel0`. **Kullanıcı kararı.** |
 | Override | Kanal bazında: bir kanalda birden fazla Override varsa en son eklenen geçerli, o kalkınca bir öncekine dönülür. Override kanalın sonucunu değiştirir; sonraki kanallar onun üzerine uygulanır. |
 | Değer tipi | `float` (Unreal ile aynı; Godot API'lerinin çoğu `float`). |
 | Değer sınıfının adı | `AttributeValue`. `Attribute` adı `System.Attribute` ile çakışıyor: kullanıcı kodunda `using System;` + `using AbilitySystem;` olunca `Attribute` yazmak **CS0104** veriyor (derlenerek denendi). Set'ler kullanıcı kodunda yazılacağı ve `Math.Clamp` için `using System;` hemen her zaman olacağı için ad değiştirildi. |
-| Başlangıç değerleri | Varsayılan değer koddadır (`new(100f)`). Aktöre özel değerler (Goblin 50 HP, Orc 200 HP) Unreal gibi **init effect** ile verilir: ASC'de `[Export]` bir başlangıç effect listesi, içinde Override modifier'lı Instant effect. Attribute sisteminde ek sınıf yok. Effect yazılana kadar kodla `SetBaseValue` kullanılır. |
+| Başlangıç değerleri | Varsayılan değer koddadır (`new(100f)`). Aktöre özel değerler (Goblin 50 HP, Orc 200 HP) Unreal gibi **init effect** ile verilir: `AbilitySystemComponent.StartingEffects`, içinde Override modifier'lı Instant effect (`Resource/Effects/DummyInit.tres` gibi). Attribute sisteminde ek sınıf yok; kodla `SetBaseValue` de kullanılabilir. |
 | Başlatma | `AttributeRegistry` ilk kullanımda kendini kurar; autoload yok. |
 | Ağ (replication) | Kapsam dışı. |
 
@@ -32,8 +32,9 @@ Aktörün sayısal değerleri (Health, MaxHealth, Mana, MoveSpeed...):
 | `ModifierOp` | `enum` | `ModifierOp/` | Modifier işlemi: `Add`, `Multiply`, `Divide`, `MultiplyCompound`, `AddFinal`, `Override`. Hem `Aggregator` hem (ileride) Modifier verisi kullanır. |
 | `ModifierEvaluationChannel` | `enum` | `ModifierEvaluationChannel/` | Modifier'ın hesaplama adımı (`Channel0`–`Channel9`). |
 | `Aggregator` | düz C# `sealed class` | `Aggregator/` | Bir attribute'un aktif modifier'larını tutar, verilen Base'den kanal kanal sonucu hesaplar. Attribute'u da set'i de **bilmez**. |
-| `AttributeValue` | düz C# `sealed class` | `AttributeValue/` | Base + Current, değişim olayları. Modifier'ları kendi `Aggregator`'ına verir. Set'i **bilmez**. |
-| `AttributeSet` | düz C# `abstract class` | `AttributeSet/` | Kullanıcının türettiği attribute grubu. Değer değiştirmenin giriş noktası; clamp/tepki hook'ları (override). |
+| `AttributeValue` | düz C# `sealed class` | `AttributeValue/` | Yalnızca Base + Current ve değişim olayları. Aggregator'ı da set'i de **bilmez**. |
+| `AttributeSet` | düz C# `abstract class` | `AttributeSet/` | Kullanıcının türettiği attribute grubu. Değer değiştirmenin giriş noktası: aggregator'ları tutar, clamp/tepki hook'ları (override), `ModifierApplied` olayı. |
+| `ModifierSource`, `ModifierEventData`, `ModifierEventKind`, `ModifierEventHandler` | `readonly struct`, `enum`, `delegate` | `ModifierSource/`, `ModifierEventData/` | Modifier'ı kimin hangi effect ile uyguladığı ve değişimi anlatan olay verisi (`Effect.md` → Faz 0). |
 | `AttributeId` | `readonly struct` | `AttributeId/` | Attribute'u veriden tanımlayan sayı (`CombatSet.Health` → 3). Effect'ler attribute'u bununla bulur. |
 | `AttributeRegistry` | düz C# `static class` | `AttributeRegistry/` | `AttributeSet` alt sınıflarını reflection ile bir kez tarar; isim ↔ id eşlemesi, editör menüsü. |
 | `AttributeContainer` | düz C# `sealed class` | `AttributeContainer/` | Aktörün set'leri. id ile O(1) attribute bulma ve id üzerinden değişiklik. `TagCountContainer`'ın attribute karşılığı. |
@@ -58,11 +59,13 @@ public enum ModifierEvaluationChannel { Channel0 = 0, ..., Channel9 = 9 }
 - Unreal'daki kanal takma adları (proje ayarından isim verme) ve kanalları kapatma ayarı yok; ihtiyaç olursa eklenir.
 
 ### Aggregator
-- Bir attribute'un aktif modifier'ları: `List<ModifierEntry>` (private nested struct: `Op`, `Magnitude`, `SourceId`, `Channel`).
-- `AddModifier(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel = Channel0)`.
+- Bir attribute'un aktif modifier'ları: `List<ModifierEntry>` (private nested struct: `Op`, `Magnitude`, `SourceId`, `Channel`, `Key`).
+- `AddModifier(ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel = Channel0, int key = 0)`.
+- `bool SetMagnitude(int sourceId, int key, float magnitude, out ModifierOp op)`: eklenmiş bir modifier'ın büyüklüğünü sırasını koruyarak günceller (yığın ve takip edilen attribute için).
 - `bool RemoveModifiers(int sourceId)`: o kaynağın tüm modifier'larını kaldırır, kalanların sırasını korur; hiç yoksa `false`.
-- `float Evaluate(float baseValue)`: sonucu hesaplar. Base dışarıdan verilir; aggregator Base tutmaz, attribute'u bilmez. Effect sistemi "şu modifier'larla değer ne olurdu" hesabı için tek başına da kullanabilir.
-- `SourceId`: modifier'ı ekleyen kaynağın anahtarı (ileride aktif effect'in handle'ı). Aggregator için anlamı yok, sadece kaldırmada kullanılır. Bir kaynak birden fazla modifier ekleyebilir.
+- `float Evaluate(float baseValue)`: sonucu hesaplar. Base dışarıdan verilir; aggregator Base tutmaz, attribute'u bilmez.
+- `static float EvaluateSingle(baseValue, op, magnitude)`: tek modifier'ı Base'e uygular (Instant effect); `static float StackMagnitude(op, magnitude, stackCount)`: yığın çarpımı (`Effect.md` → Faz 2).
+- `SourceId`: modifier'ı ekleyen kaynağın anahtarı (aktif effect'in handle'ı). Aggregator için anlamı yok, kaldırmada kullanılır. Bir kaynak birden fazla modifier ekleyebilir; `Key` bunları ayırır.
 - Liste **kanala göre sıralı**, aynı kanalda eklenme sırasında tutulur: ekleme doğru yere yapılır (O(k)), hesap tek geçişte biter ve bir kanaldaki son Override en son eklenendir.
 - Sonuç her seferinde **baştan hesaplanır**, çalışan toplam tutulmaz: ekle/çıkar sırasında float hatası birikmez, Override'ın kalkması doğru çalışır. Maliyet O(k), k = aktif modifier sayısı (genelde < 10), allocation yok.
 
@@ -83,7 +86,7 @@ her kanal için (küçükten büyüğe, sadece modifier'ı olanlar):
 - `public AttributeValue(float baseValue = 0f)`: Base ve Current başlangıçta aynı. Başlangıç değeri clamp'lenmez; varsayılanları tutarlı ver.
 - `float BaseValue { get; }`, `float CurrentValue { get; }`: düz alan okuma.
 - Değiştirme metotları `internal`; sadece `AttributeSet` çağırır (kurallar her değişimde çalışsın diye). Godot'ta addon ve oyun kodu aynı assembly'ye derlendiği için `internal` gerçek bir engel değil, niyeti belirtir.
-- Modifier'lar kendi `Aggregator`'ına gider. Aggregator ilk modifier geldiğinde bir kez oluşturulur; modifier almayan attribute bellek ayırmaz.
+- Modifier'lar `AttributeSet`'in tuttuğu aggregator'a gider (ilk modifier'da oluşur; modifier almayan attribute bellek ayırmaz).
 - Olaylar (C# `event`, sadece değer gerçekten değiştiyse):
   - `event Action<AttributeValue, float, float> BaseValueChanged`: (attribute, eski, yeni)
   - `event Action<AttributeValue, float, float> CurrentValueChanged`
@@ -124,13 +127,15 @@ public sealed class CombatSet : AttributeSet
 | `PreBaseValueChange(AttributeValue, ref float newValue)` | Base yazılmadan önce | Base'i clamp'le (Health ≥ 0). |
 | `PreCurrentValueChange(AttributeValue, ref float newValue)` | Hesaplanan Current yazılmadan önce | Current'ı clamp'le. Modifier'ları değiştirmez; her hesapta yeniden uygulanır. |
 | `PostCurrentValueChange(AttributeValue, float oldValue, float newValue)` | Current değiştikten sonra, olaylardan önce | Set içi tepki (MaxHealth → Health). |
-
-Meta attribute'lar (Damage → Health) için `PostEffectExecute` hook'u Effect planında karara bağlanacak.
+| `PostEffectExecute(in ModifierEventData data)` | Executed bir modifier Base'i değiştirdikten sonra, `ModifierApplied`'dan önce | Meta attribute (Damage → Health); kaynak `data.Source`'tan okunur. |
 
 **Public API:**
 - `void SetBaseValue(AttributeValue attribute, float value)`: Base'i yazar, Current'ı yeniden hesaplar. Değer aynı olsa da hesap yapılır (clamp yeniden uygulansın diye); olay yalnızca değişimde tetiklenir.
-- `void AddModifier(AttributeValue attribute, ModifierOp op, float magnitude, int sourceId, ModifierEvaluationChannel channel = Channel0)`
-- `void RemoveModifiers(AttributeValue attribute, int sourceId)`
+- `void AddModifier(AttributeValue attribute, ModifierOp op, float magnitude, in ModifierSource source, ModifierEvaluationChannel channel = Channel0, int key = 0)`: Current'a eklenir, `Added`.
+- `void UpdateModifier(AttributeValue attribute, in ModifierSource source, int key, float magnitude)`: büyüklüğü günceller, `Updated`.
+- `void RemoveModifiers(AttributeValue attribute, int sourceId)`: `Removed`.
+- `void ExecuteModifier(AttributeValue attribute, ModifierOp op, float magnitude, in ModifierSource source)`: Base'e bir kez uygular (Instant/periyodik effect), sonra `PostEffectExecute`, `Executed`.
+- `event ModifierEventHandler ModifierApplied`: yukarıdaki dört tür için, değerler yazıldıktan sonra.
 - `attribute`'un bu set'e ait olduğu varsayılır, kontrol edilmez. Veri tarafı (id ile) doğru set'e `AttributeContainer` üzerinden yönlenir.
 
 **Kurallar:**
@@ -150,7 +155,8 @@ SetBaseValue(attr, v)
   6. Current değiştiyse → PostCurrentValueChange(attr, eski, yeni)
   7. Olaylar: BaseValueChanged (değiştiyse), CurrentValueChanged (değiştiyse)
 
-AddModifier / RemoveModifiers → listeyi güncelle, sonra 3–7 (Base olayı olmaz)
+AddModifier / UpdateModifier / RemoveModifiers → listeyi güncelle, sonra 3–7 (Base olayı olmaz), sonra ModifierApplied
+ExecuteModifier → SetBaseValue(EvaluateSingle(base, op, m)) (1–7), sonra PostEffectExecute, sonra ModifierApplied
 ```
 - Olaylar tüm değerler yazıldıktan sonra tetiklenir; dinleyici her zaman tutarlı durum görür (`TagCountContainer` ile aynı ilke).
 - Sıra Unreal ile aynı: önce set'in hook'u, sonra dış dinleyiciler.
@@ -171,7 +177,7 @@ AddModifier / RemoveModifiers → listeyi güncelle, sonra 3–7 (Base olayı ol
 - `AttributeId Request(string name)`: isimden id. Bulamazsa `AttributeId.None` + `GD.PushError`. Yükleme anında çağrılır, tick'te **çağrılmaz**.
 - `string GetName(AttributeId id)`.
 - `int Count`: container dizilerini boyutlandırmak için (id 0 dahil).
-- `internal`: bir set tipinin id listesi ve property okuması (`AttributeContainer` bağlarken kullanır); `BuildOptions()`: editör menüsü için virgülle ayrılmış, sıralı isimler (Modifier resource'u kullanacak).
+- `internal`: bir set tipinin id listesi ve property okuması (`AttributeContainer` bağlarken kullanır); `BuildOptions()`: editör menüsü için virgülle ayrılmış, sıralı attribute isimleri; `BuildSetOptions()`: set sınıfı adları menüsü; `CreateSet(string setName)`: adla set oluşturur (parametresiz public constructor gerekir; ASC `AttributeSets` kullanır).
 - İç veri: `string[] _names` (id ile indeksli), `Dictionary<string, int> _idsByName`, `Dictionary<Type, ...>` (set tipi → id listesi + `PropertyInfo[]`).
 - Editörde oyun assembly'si her derlemede yeniden yüklendiği için statik durum sıfırlanır; menü yeni set'leri kendiliğinden görür.
 - **Not:** iOS gibi NativeAOT/trimming kullanan dışa aktarımlarda reflection'a dikkat; gerekirse `[DynamicallyAccessedMembers]` eklenir.
@@ -186,8 +192,9 @@ AddModifier / RemoveModifiers → listeyi güncelle, sonra 3–7 (Base olayı ol
 - `T Get<T>() where T : AttributeSet`: set listesinde tip kontrolü (genelde 1–3 set); yoksa `null`. Sık kullanan kod set referansını saklar.
 - `bool Has(AttributeId id)`, `AttributeValue GetAttribute(AttributeId id)` (yoksa `null`): O(1).
 - id ile değişiklik (Effect'ler için; sahibi set'e yönlendirir, hook'lar çalışır):
-  - `SetBaseValue(AttributeId, float)`, `AddModifier(AttributeId, ModifierOp, float magnitude, int sourceId, ModifierEvaluationChannel channel = Channel0)`, `RemoveModifiers(AttributeId, int sourceId)`.
+  - `SetBaseValue(AttributeId, float)`, `AddModifier(AttributeId, ModifierOp, float magnitude, in ModifierSource source, channel = Channel0, int key = 0)`, `UpdateModifier(AttributeId, in ModifierSource, int key, float magnitude)`, `ExecuteModifier(AttributeId, ModifierOp, float magnitude, in ModifierSource source)`, `RemoveModifiers(AttributeId, int sourceId)`.
   - Aktörde o attribute yoksa işlem yok sayılır, hata verilmez: aynı effect farklı set'lere sahip aktörlere uygulanabilsin.
+- `event ModifierEventHandler ModifierApplied`: set'lerin hepsinin olayını tek yerden yayınlar (set eklenince abone olunur). Oyun kodu (hasar sayısı, öldürme bilgisi) bunu dinler.
 - Set kaldırma şimdilik yok.
 
 ### Kullanım
@@ -199,20 +206,17 @@ attributes.Add(combat);
 combat.Health.CurrentValueChanged += OnHealthChanged;
 combat.SetBaseValue(combat.Health, 50f);
 
-// Effect tarafı (ileride): veri isimden bir kez id'ye çevrilir.
+// Effect'ler bunu kendisi yapar: veri isimden bir kez id'ye çevrilir. Elle eklerken negatif sourceId kullan (effect handle'ları pozitif).
 AttributeId health = AttributeRegistry.Request("CombatSet.Health");
-attributes.AddModifier(health, ModifierOp.Multiply, 1.5f, sourceId: 7);
-attributes.AddModifier(health, ModifierOp.Add, 10f, sourceId: 7, ModifierEvaluationChannel.Channel1);
-attributes.RemoveModifiers(health, sourceId: 7);
+var source = new ModifierSource(-1);
+attributes.AddModifier(health, ModifierOp.Multiply, 1.5f, source);
+attributes.AddModifier(health, ModifierOp.Add, 10f, source, ModifierEvaluationChannel.Channel1, key: 1);
+attributes.RemoveModifiers(health, sourceId: -1);
 ```
 
-## Bu Planın Dışında (ilgili planlarda)
-- **Modifier verisi:** EffectData içinde `[Export] string Attribute` (açılır menü: `AttributeRegistry.BuildOptions`), `ModifierOp`, büyüklük → Modifier planı.
-- **Instant effect'in Base'e uygulanması:** op'u Base üzerinde hesaplayıp `SetBaseValue` çağırmak → Effect planı.
-- **Kaynak handle'ları:** `sourceId` üretimi. Elle modifier ekleyen kod, effect handle'larıyla çakışmayan id kullanmalı → Effect planında netleşir.
-- **Attribute'a bağlı büyüklük** (MaxHealth = Vitality × 10) ve kaynak değişince modifier'ın güncellenmesi → Modifier/Effect planı.
-- **Meta attribute** (Damage → Health) ve `PostEffectExecute` hook'u → Effect planı.
-- **Aktöre editörden set ekleme** (ASC'de set tipi menüsü) ve **başlangıç effect listesi** → ASC planı.
+## Bu Planın Dışında (başka planlarda uygulandı)
+- **Modifier verisi, Instant effect'in Base'e uygulanması, kaynak handle'ları, attribute'a bağlı büyüklük, meta attribute:** `Effect.md`.
+- **Aktöre editörden set ekleme ve başlangıç effect listesi:** `AbilitySystemComponent` (`Ability.md`).
 
 ## Bağımlılıklar
 ```
@@ -220,12 +224,13 @@ AttributeContainer ──► AttributeRegistry ──► AttributeId
         │                     │
         ▼                     ▼
    AttributeSet ◄──── (alt sınıfları tarar)
-        │
-        ▼
-  AttributeValue ──► Aggregator ──► ModifierOp
-                                └─► ModifierEvaluationChannel
+     │      │
+     │      └──► Aggregator ──► ModifierOp
+     │                      └─► ModifierEvaluationChannel
+     ├──► AttributeValue
+     └──► ModifierSource, ModifierEventData
 ```
-- Döngü yok. `Aggregator` attribute'u, `AttributeValue` set'i, `AttributeSet` registry'yi ve container'ı bilmez.
+- Döngü yok. `Aggregator` attribute'u, `AttributeValue` set'i ve aggregator'ı, `AttributeSet` registry'yi ve container'ı bilmez.
 - Attribute sistemi Tags addon'unu kullanmaz.
 
 ## Performans Özeti

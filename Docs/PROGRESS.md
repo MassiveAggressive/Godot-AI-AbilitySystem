@@ -23,6 +23,7 @@
 
 - Ability Faz 2: `AbilityEventData`, `SendEvent`, tetikleyiciler (olay, tag geldi, tag varken), pasif, giriş (`PressInput`/`ReleaseInput`, ASC `ProcessInput`), `WaitEventTask`, `WaitTagTask`, `WaitInputReleaseTask`; Faz 1 ile birlikte 108 test — [Claude, 2026-11-18]
 
+- Temizlik: `Attribute.md` gövdesi güncel koda göre düzeltildi (aggregator set'te, `ModifierSource`, `ExecuteModifier`, `UpdateModifier`, `ModifierApplied`, `CreateSet`); eski notlar silindi — [Claude, 2026-11-18]
 - Ability Faz 3: Fireball örnek sahnesi (`Resource/Scenes/FireballDemo/`, `Resource/Abilities/Fireball.*`, `Resource/Effects/`); headless uçtan uca denendi (repoya girmez) — [Claude, 2026-11-18]
 
 ## Yapılıyor
@@ -35,8 +36,7 @@
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
 - Sahne testleri ana sahne olarak da çalıştırılmalı (`--headless --path <proje> res://<sahne>.tscn --quit-after N`): ana sahne autoload'lar ağaca girmeden instantiate edilir; başka sahneden yüklemek bu sırayı yakalamaz.
 - Yeni script'lerin `.cs.uid` dosyaları test sahnesi çalıştırmasıyla değil, `--headless --path <proje> --import` ile üretilir; commit'e dahil et.
-- `Attribute.md`'nin gövdesi Faz 0 öncesini anlatıyor; bir sonraki Attribute işinde güncellenmeli.
-- Ana sahne (`run/main_scene`) yok; örnek sahne eklenince proje kökündeki `project.godot`'a girilmeli.
+- `run/main_scene` şu an kullanıcının `Test/AbilityDemo` sahnesi; Fireball örneği (`Resource/Scenes/FireballDemo/FireballDemo.tscn`) F6 ile açılır, ana sahne yapılmadı.
 - Resource tabanlı attribute set fikri ertelendi (`Systems/Attribute.md` → İleride).
 - Editörde `[Tool]` olmayan `[GlobalClass]` alt sınıf yalnızca yer tutucu `Resource` olur; alt sınıf beklenen export alanları `Resource` tipinde tutulup çalışma anında cast edilir (`Magnitude.Calculation`, `EffectData.Executions`).
 - Faz 3 testleri, `Resource` tipine geçişten sonra yeniden çalıştırılmadı (yalnızca derleme).
