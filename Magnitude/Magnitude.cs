@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using Tags;
 
@@ -6,13 +7,16 @@ namespace AbilitySystem;
 /// <summary>
 /// A number an effect uses: a modifier's magnitude, an effect's duration or period. Pick the type in the inspector;
 /// only the fields of that type are shown. The value is calculated by <see cref="EffectSpec.CalculateMagnitude"/>
-/// when the effect is applied. Shared by everyone who loads the resource, so it is not changed at run time.
+/// when the effect is applied. Constant and AttributeBased numbers may change with the spec's level
+/// (<see cref="LevelValues"/>, <see cref="LevelCurve"/>). Shared by everyone who loads the resource, so it is not
+/// changed at run time.
 /// </summary>
 [Tool]
 [GlobalClass]
 public partial class Magnitude : Resource
 {
     private MagnitudeType _type;
+    private float[] _levelValues = Array.Empty<float>();
     private string _callerTagName = string.Empty;
     private string _backingAttributeName = string.Empty;
     private Tag _callerTag;
@@ -82,6 +86,27 @@ public partial class Magnitude : Resource
     [Export]
     public bool Snapshot { get; set; } = true;
 
+    /// <summary>
+    /// Constant and AttributeBased: the value (or coefficient) for level 1, 2, 3…; when filled, it replaces
+    /// <see cref="Value"/>/<see cref="Coefficient"/> and <see cref="LevelCurve"/>. Between levels it is read on a
+    /// straight line (2.5 → halfway between the 2nd and 3rd); below 1 the first, past the end the last value.
+    /// </summary>
+    [Export]
+    public float[] LevelValues
+    {
+        get => _levelValues;
+        set => _levelValues = value ?? Array.Empty<float>();
+    }
+
+    /// <summary>
+    /// Constant and AttributeBased, when <see cref="LevelValues"/> is empty: <see cref="Value"/>/<see cref="Coefficient"/>
+    /// × the curve at the level. Save it as a .tres to share one curve between abilities. Set the curve's Max Domain
+    /// to the highest level and Max Value to the largest multiplier (Godot starts both at 0–1); linear tangents give
+    /// straight lines between points. Outside its domain the end value is used.
+    /// </summary>
+    [Export]
+    public Curve LevelCurve { get; set; }
+
     /// <summary>SetByCaller key; None if the name is not found (reported once).</summary>
     public Tag CallerTag
     {
@@ -112,6 +137,26 @@ public partial class Magnitude : Resource
         }
     }
 
+    /// <summary><paramref name="number"/> (Value or Coefficient) at <paramref name="level"/>: from <see cref="LevelValues"/>, else × <see cref="LevelCurve"/>.</summary>
+    internal float ScaleByLevel(float number, float level)
+    {
+        float[] values = _levelValues;
+        if (values.Length == 0)
+            return LevelCurve == null ? number : number * LevelCurve.Sample(level);
+
+        // Level 1 is the first value, as in a curve table keyed by level; ends are held.
+        float index = level - 1f;
+        int last = values.Length - 1;
+        if (!(index > 0f))
+            return values[0];
+
+        if (index >= last)
+            return values[last];
+
+        int lower = (int)index;
+        return Mathf.Lerp(values[lower], values[lower + 1], index - lower);
+    }
+
     // Godot API: the property info arrives as a Godot Dictionary.
     public override void _ValidateProperty(Godot.Collections.Dictionary property)
     {
@@ -127,6 +172,7 @@ public partial class Magnitude : Resource
             nameof(BackingAttributeName) or nameof(CaptureFrom) or nameof(Coefficient) => attributeBased,
             nameof(Calculation) => _type == MagnitudeType.Custom,
             nameof(Snapshot) => attributeBased || _type == MagnitudeType.Custom,
+            nameof(LevelValues) or nameof(LevelCurve) => attributeBased || _type == MagnitudeType.Constant,
             _ => true,
         };
 

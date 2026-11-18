@@ -44,6 +44,12 @@ public sealed class EffectSpec
     /// <summary>The applying actor's tags, read by custom calculations (<see cref="CalculationContext.SourceTags"/>).</summary>
     public TagCountContainer SourceTags { get; set; }
 
+    /// <summary>
+    /// Scales Constant and AttributeBased magnitudes that have level values or a level curve; custom calculations
+    /// read it from <see cref="CalculationContext.Level"/>. 1 by default; abilities pass their own level.
+    /// </summary>
+    public float Level { get; set; } = 1f;
+
     /// <summary>Sets the value of SetByCaller magnitudes keyed by <paramref name="tag"/>. Returns this spec for chaining.</summary>
     public EffectSpec SetCallerMagnitude(Tag tag, float value)
     {
@@ -112,7 +118,7 @@ public sealed class EffectSpec
                 GD.PushError($"EffectSpec: a custom magnitude has no MagnitudeCalculation{Where()}; 0 is used.");
                 return 0f;
             default:
-                return magnitude.Value;
+                return magnitude.ScaleByLevel(magnitude.Value, Level);
         }
     }
 
@@ -126,7 +132,7 @@ public sealed class EffectSpec
         }
 
         AttributeValue attribute = container.GetAttribute(magnitude.BackingAttribute);
-        return magnitude.Coefficient * (attribute?.CurrentValue ?? 0f);
+        return magnitude.ScaleByLevel(magnitude.Coefficient, Level) * (attribute?.CurrentValue ?? 0f);
     }
 
     /// <summary>The attribute an attribute based, non-snapshot magnitude follows; null if there is none to follow.</summary>

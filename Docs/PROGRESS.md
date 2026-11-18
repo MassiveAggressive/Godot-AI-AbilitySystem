@@ -26,6 +26,8 @@
 - Temizlik: `Attribute.md` gövdesi güncel koda göre düzeltildi (aggregator set'te, `ModifierSource`, `ExecuteModifier`, `UpdateModifier`, `ModifierApplied`, `CreateSet`); eski notlar silindi — [Claude, 2026-11-18]
 - Ability Faz 3: Fireball örnek sahnesi (`Resource/Scenes/FireballDemo/`, `Resource/Abilities/Fireball.*`, `Resource/Effects/`); headless uçtan uca denendi (repoya girmez) — [Claude, 2026-11-18]
 
+- Seviye ve eğri (`Systems/Level.md`): `Magnitude.LevelValues`/`LevelCurve`, `EffectSpec.Level`, `ActiveEffect.Level`, `CalculationContext.Level`, `Ability.Level` float, `AbilityContainer.SetLevel`; 26 yeni test, toplam 134 — [Claude, 2026-11-18]
+
 ## Yapılıyor
 - (boş)
 

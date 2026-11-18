@@ -7,7 +7,6 @@
 - **Taşma ayarları:** yığın sınırına ulaşınca başka effect uygula (`OverflowEffects`), taşan uygulamayı reddet (`bDenyOverflowApplication`), taşınca yığını temizle (`bClearStackOnOverflow`).
 - **Koşullu effect'ler:** bir effect uygulanınca (veya başarılı olunca) başka bir effect'i tetikleme.
 - **Uygulanma şansı:** `%X ihtimalle uygulan`.
-- **Seviye ve eğri:** effect seviyesi; magnitude'un seviyeye göre eğriden okunması (Unreal `ScalableFloat`). Ability seviyesiyle birlikte düşünülmeli.
 - **Modifier başına tag şartı:** modifier yalnızca kaynakta/hedefte belirli tag'ler varken geçerli.
 - **Etkinleşince periyot politikası:** etkisiz effect tekrar etkinleşince periyodu sıfırlama veya hemen çalıştırıp sıfırlama (Unreal `ResetPeriod`/`ExecuteAndResetPeriod`); Faz 3'te yalnızca `NeverReset`.
 - **Kaynak tag'ine göre bağışıklık:** uygulayanın tag'lerine bakan bağışıklık (ör. düşman takımından gelenlere); Faz 3'te yalnızca gelen effect'in `AssetTags`'ı.
@@ -24,7 +23,6 @@
 - Aktifken yeniden tetikleme (`bRetriggerInstancedAbility`).
 - `await` ile task; animasyon task'ı (`PlayAnimationAndWait`); animasyondan olay gönderme.
 - Hedefleme (target actor / hedef verisi).
-- Ability seviyesi ve eğriyle maliyet/cooldown ölçekleme (maliyette SetByCaller de buna bağlı).
 - Kaynak/hedef tag şartları; başarısızlık tag'leri.
 - Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
 
@@ -35,6 +33,9 @@
 
 ## Timers (Godot-AI-Timers reposu)
 - Zaman genişletme: aktöre/gruba özel zaman ölçeği (bullet-time, donma). Şu an tek global saat.
+
+## Seviye
+- **Ortak eğri tablosu:** birden çok satırlı tablo (Unreal `UCurveTable`, CSV içe aktarma); şu an her eğri ayrı bir Godot `Curve` `.tres`'i (`Systems/Level.md`).
 
 ## Araçlar
 - Debug görünümü (aktör üzerindeki effect/attribute/tag'leri gösteren panel veya komut).

@@ -11,6 +11,7 @@ Sistem ayrıntıları ve kararları: `Docs/Systems/<Sistem>.md`. Burada yalnızc
 | `MagnitudeCalculation`, `ExecutionCalculation` (soyut Resource'lar), `CalculationContext`, `ExecutionOutput` | UGameplayModMagnitudeCalculation, UGameplayEffectExecutionCalculation | Uygulandı (`Effect.md` Faz 3) |
 | `Ability` (soyut Resource), `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityEventData` | UGameplayAbility, FGameplayAbilitySpecHandle, FGameplayEventData | Faz 1–2 uygulandı (`Ability.md`) |
 | `AbilityTask`, `WaitDelayTask`, `WaitEventTask`, `WaitTagTask`, `WaitInputReleaseTask` | UAbilityTask, UAbilityTask_Wait… | Faz 1–2 uygulandı (`Ability.md`) |
+| Seviye: `Magnitude.LevelValues`/`LevelCurve`, `EffectSpec.Level`, `Ability.Level` (ayrı sınıf yok) | FScalableFloat, spec level | Uygulandı (`Level.md`) |
 | Cooldown | Cooldown GE | Ayrı sınıf yok: `Ability.Cooldown` bir `EffectData` (HasDuration + granted tag) |
 | `AbilitySystemComponent` | ASC | Uygulandı; alt sistemleri birleştirir, kendisi mantık taşımaz (`Ability.md`) |
 

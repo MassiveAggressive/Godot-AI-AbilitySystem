@@ -116,8 +116,11 @@ public abstract partial class Ability : Resource
 
     public AbilityHandle Handle { get; private set; }
 
-    /// <summary>Set when given (default 1); read it in your own code, e.g. for SetByCaller values.</summary>
-    public int Level { get; private set; }
+    /// <summary>
+    /// Set when given (default 1), changed with <see cref="AbilityContainer.SetLevel"/>. Passed to the specs this
+    /// ability makes (cost and cooldown too), so level values and curves of their magnitudes follow it.
+    /// </summary>
+    public float Level { get; private set; }
 
     /// <summary>From activation until the end (including <see cref="OnEnd"/>).</summary>
     public bool IsActive { get; private set; }
@@ -221,9 +224,9 @@ public abstract partial class Ability : Resource
     /// <summary>Ends the ability as cancelled.</summary>
     protected void Cancel() => Finish(true);
 
-    /// <summary>A spec of <paramref name="data"/> coming from this actor (instigator, its attributes and tags), to apply to anyone.</summary>
+    /// <summary>A spec of <paramref name="data"/> coming from this actor (instigator, its attributes and tags) at this ability's level, to apply to anyone.</summary>
     protected EffectSpec MakeEffectSpec(EffectData data, Node causer = null) =>
-        new(data, Actor, causer, AbilitySystem) { SourceAttributes = Attributes, SourceTags = Tags };
+        new(data, Actor, causer, AbilitySystem) { SourceAttributes = Attributes, SourceTags = Tags, Level = Level };
 
     protected EffectHandle ApplyEffectToSelf(EffectData data)
     {
@@ -292,28 +295,34 @@ public abstract partial class Ability : Resource
         return task;
     }
 
-    internal void Grant(Ability definition, AbilityHandle handle, int level, AttributeContainer attributes, TagCountContainer tags,
+    internal void Grant(Ability definition, AbilityHandle handle, float level, AttributeContainer attributes, TagCountContainer tags,
         ActiveEffectContainer effects, Node actor, Node abilitySystem, Action<Ability, bool> ended)
     {
         Definition = definition;
         Handle = handle;
-        Level = level;
         Attributes = attributes;
         Tags = tags;
         Effects = effects;
         Actor = actor;
         AbilitySystem = abilitySystem;
         _ended = ended;
-
-        // Built once, so cost and cooldown checks (polled by UI every frame) allocate nothing.
-        _costSpec = Cost == null ? null : MakeEffectSpec(Cost);
-        _cooldownSpec = Cooldown == null ? null : MakeEffectSpec(Cooldown);
+        SetLevel(level);
 
         if (Cost != null && !Cost.IsInstant)
             GD.PushWarning($"Ability '{definition.ResourcePath}': the cost effect should be instant.");
 
         if (Cooldown != null && (Cooldown.IsInstant || Cooldown.GrantedTags == null || Cooldown.GrantedTags.Count == 0))
             GD.PushWarning($"Ability '{definition.ResourcePath}': the cooldown effect needs a duration and granted tags; otherwise it never blocks activation.");
+    }
+
+    /// <summary>Effects already applied keep the level they were applied at.</summary>
+    internal void SetLevel(float level)
+    {
+        Level = level;
+
+        // Built once per level, so cost and cooldown checks (polled by UI every frame) allocate nothing.
+        _costSpec = Cost == null ? null : MakeEffectSpec(Cost);
+        _cooldownSpec = Cooldown == null ? null : MakeEffectSpec(Cooldown);
     }
 
     internal bool MeetsTagRequirements()

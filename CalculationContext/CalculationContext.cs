@@ -34,6 +34,9 @@ public readonly struct CalculationContext
     /// <summary>Stacks of the effect; 1 for instant and non-stacking effects.</summary>
     public int StackCount { get; }
 
+    /// <summary>The spec's level (<see cref="EffectSpec.Level"/>); 1 without a spec.</summary>
+    public float Level => Spec?.Level ?? 1f;
+
     /// <summary>Current value of a source attribute; 0 if the source or the attribute is missing.</summary>
     public float GetSourceValue(AttributeId attribute) => GetValue(SourceAttributes, attribute);
 

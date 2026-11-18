@@ -23,6 +23,9 @@ public sealed class ActiveEffect
 
     public EffectData Data => Spec.Data;
 
+    /// <summary>The level it was applied at; a stack keeps its first application's level.</summary>
+    public float Level => Spec.Level;
+
     /// <summary>Seconds, calculated when applied; +∞ for infinite effects.</summary>
     public float Duration { get; }
 

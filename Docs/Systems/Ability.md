@@ -16,6 +16,8 @@
 > - `WaitEventTask(tag, onlyOnce = true)`, `WaitTagTask` (durum zaten öyleyse hemen), `WaitInputReleaseTask` (giriş basılı değilse hemen 0 ile; `HeldTime`). Yardımcılar: `WaitEvent(tag, received, onlyOnce)`, `WaitTag(tag, completed, present = true)`, `WaitInputRelease(released)`.
 > - `Ability.IsInputPressed`; `PressInput`/`ReleaseInput` aynı action'a bağlı tüm ability'lere gider. ASC `ProcessInput` aynı action'ı bir kez iletir, `_Ready`'de işlemeyi açar/kapatır (Godot `_UnhandledInput` override edeni kendiliğinden açar).
 > - Olay/giriş task'lara iletilirken bitmiş task'lar listeden düşmez (yürüyüş bozulmasın); o sırada başlayan task bir sonrakini bekler.
+>
+> Seviye (2026-11-18, `Level.md`): `Ability.Level` artık `float`; `Give(definition, float level = 1f)`, `AbilityContainer.SetLevel(handle, level)`. `MakeEffectSpec` ile maliyet/cooldown spec'leri ability'nin seviyesini taşır.
 > Karşılığı: Unreal `UGameplayAbility`, `FGameplayAbilitySpec(Handle)`, `UAbilityTask`, `FGameplayEventData`, `UAbilitySystemComponent`.
 > Ön koşul: PROGRESS'teki editör kontrolü (`[Tool]` olmayan alt sınıfı `.tres` olarak kaydedip yeniden açma). Ability'ler aynı yer tutucu mekanizmasına dayanıyor.
 

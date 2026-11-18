@@ -259,7 +259,7 @@ public partial class ArmorDamage : ExecutionCalculation
 1. `CalculationContext`, `EffectSpec` ekleri. 2. `MagnitudeCalculation`, `MagnitudeType.Custom`. 3. `ExecutionCalculation`, `ExecutionOutput`, `EffectData.Executions`. 4. Inhibition, `RemovalTags`. 5. Bağışıklık. 6. Testler, `Effect.md`/`ARCHITECTURE.md`.
 
 ## Bu Planın Dışında
-ASC (container'ları sahiplenir, başlangıç effect'leri), Cooldown (HasDuration + `Cooldown.X` tag'i, kalan süre sorgusu), Cost ve seviye ölçekleme (Ability planı).
+ASC (container'ları sahiplenir, başlangıç effect'leri), Cooldown (HasDuration + `Cooldown.X` tag'i, kalan süre sorgusu), Cost: `Ability.md`. Seviye ölçekleme (`EffectSpec.Level`, `Magnitude.LevelValues`/`LevelCurve`, `ActiveEffect.Level`, `CalculationContext.Level`): `Level.md`.
 
 ## Bağımlılıklar
 ```

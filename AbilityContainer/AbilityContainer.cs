@@ -98,12 +98,13 @@ public sealed class AbilityContainer
     }
 
     /// <summary>
-    /// Gives the actor a copy of <paramref name="definition"/>. A definition already given returns its existing
-    /// handle (one copy per definition). None if the definition is null. Abilities that
+    /// Gives the actor a copy of <paramref name="definition"/> at <paramref name="level"/>. A definition already
+    /// given returns its existing handle and keeps its level (one copy per definition; see <see cref="SetLevel"/>).
+    /// None if the definition is null. Abilities that
     /// <see cref="Ability.ActivateOnGranted"/>, or whose <see cref="Ability.TriggerWhileTagPresent"/> tag the actor
     /// already has, activate right after <see cref="AbilityGiven"/>.
     /// </summary>
-    public AbilityHandle Give(Ability definition, int level = 1)
+    public AbilityHandle Give(Ability definition, float level = 1f)
     {
         if (definition == null)
         {
@@ -151,6 +152,20 @@ public sealed class AbilityContainer
 
         ability.Finish(cancelled: true);
         AbilityRemoved?.Invoke(ability);
+        return true;
+    }
+
+    /// <summary>
+    /// Changes the ability's level: its cost, cooldown and the specs it makes from now on use it. Effects it already
+    /// applied keep their level (as in Unreal). Works while the ability is active.
+    /// </summary>
+    public bool SetLevel(AbilityHandle handle, float level)
+    {
+        Ability ability = Get(handle);
+        if (ability == null)
+            return false;
+
+        ability.SetLevel(level);
         return true;
     }
 
