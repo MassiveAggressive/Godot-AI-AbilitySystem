@@ -22,8 +22,13 @@ public sealed class AbilityContainer
     private readonly Node _abilitySystem;
     private readonly List<Ability> _abilities = new(4);
 
-    // Bound once, so giving an ability allocates no new delegate.
+    // Bound once, so giving an ability (or subscribing to tags again) allocates no new delegate.
     private readonly Action<Ability, bool> _onAbilityEnded;
+    private readonly Action<Tag, bool> _onTagPresenceChanged;
+
+    // Abilities triggered by tags; tags are followed only while there is one, so other actors pay nothing.
+    private List<Ability> _tagTriggered;
+    private bool _listeningToTags;
 
     private int _lastActivationId;
 
@@ -40,6 +45,7 @@ public sealed class AbilityContainer
         _actor = actor;
         _abilitySystem = abilitySystem;
         _onAbilityEnded = OnAbilityEnded;
+        _onTagPresenceChanged = OnTagPresenceChanged;
     }
 
     public event Action<Ability> AbilityGiven;
@@ -55,6 +61,9 @@ public sealed class AbilityContainer
 
     /// <summary>(ability, reason) when an activation was refused.</summary>
     public event Action<Ability, ActivationFailure> ActivationFailed;
+
+    /// <summary>Every event sent with <see cref="SendEvent"/>, after the triggered abilities and the tasks had it.</summary>
+    public event AbilityEventHandler EventReceived;
 
     public int Count => _abilities.Count;
 
@@ -90,7 +99,9 @@ public sealed class AbilityContainer
 
     /// <summary>
     /// Gives the actor a copy of <paramref name="definition"/>. A definition already given returns its existing
-    /// handle (one copy per definition). None if the definition is null.
+    /// handle (one copy per definition). None if the definition is null. Abilities that
+    /// <see cref="Ability.ActivateOnGranted"/>, or whose <see cref="Ability.TriggerWhileTagPresent"/> tag the actor
+    /// already has, activate right after <see cref="AbilityGiven"/>.
     /// </summary>
     public AbilityHandle Give(Ability definition, int level = 1)
     {
@@ -114,7 +125,15 @@ public sealed class AbilityContainer
         AbilityHandle handle = AbilityHandle.Next();
         ability.Grant(definition, handle, level, _attributes, _tags, _effects, _actor, _abilitySystem, _onAbilityEnded);
         _abilities.Add(ability);
+        if (ability.HasTagTriggers)
+            TrackTagTriggers(ability);
+
         AbilityGiven?.Invoke(ability);
+
+        bool tagPresent = ability.TriggerWhileTagPresent != null && _tags.HasAny(ability.TriggerWhileTagPresent);
+        if ((ability.ActivateOnGranted || tagPresent) && _abilities.Contains(ability) && !ability.IsActive)
+            Activate(ability, false, default);
+
         return handle;
     }
 
@@ -127,6 +146,9 @@ public sealed class AbilityContainer
 
         // Off the list first, so listeners of the cancel cannot activate it again.
         _abilities.Remove(ability);
+        if (ability.HasTagTriggers)
+            UntrackTagTriggers(ability);
+
         ability.Finish(cancelled: true);
         AbilityRemoved?.Invoke(ability);
         return true;
@@ -145,14 +167,14 @@ public sealed class AbilityContainer
     public bool TryActivate(AbilityHandle handle)
     {
         Ability ability = Get(handle);
-        return ability != null && Activate(ability);
+        return ability != null && Activate(ability, false, default);
     }
 
     /// <summary>Activates the actor's copy of <paramref name="ability"/> (a definition or the copy itself).</summary>
     public bool TryActivate(Ability ability)
     {
         Ability own = Find(ability);
-        return own != null && Activate(own);
+        return own != null && Activate(own, false, default);
     }
 
     /// <summary>Activates the first ability whose asset tags match <paramref name="tag"/> (hierarchically) and can activate.</summary>
@@ -161,11 +183,85 @@ public sealed class AbilityContainer
         for (int i = 0; i < _abilities.Count; i++)
         {
             Ability ability = _abilities[i];
-            if (ability.AssetTags != null && ability.AssetTags.Has(tag) && Activate(ability))
+            if (ability.AssetTags != null && ability.AssetTags.Has(tag) && Activate(ability, false, default))
                 return true;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Sends an event to the actor: inactive abilities with a matching <see cref="Ability.TriggerEventTags"/> tag
+    /// (hierarchically) activate with it, then the tasks of the other active abilities receive it, then
+    /// <see cref="EventReceived"/>. Returns how many abilities it activated.
+    /// </summary>
+    public int SendEvent(in AbilityEventData data)
+    {
+        // Abilities activated by this event do not receive it again through their tasks.
+        int lastActivationId = _lastActivationId;
+        int activated = 0;
+        for (int i = 0; i < _abilities.Count; i++)
+        {
+            Ability ability = _abilities[i];
+            if (!ability.IsActive && MatchesAny(data.Tag, ability.TriggerEventTags) && Activate(ability, true, data))
+                activated++;
+        }
+
+        for (int i = 0; i < _abilities.Count; i++)
+        {
+            Ability ability = _abilities[i];
+            if (ability.ActivationId <= lastActivationId)
+                ability.ReceiveEvent(data);
+        }
+
+        EventReceived?.Invoke(data);
+        return activated;
+    }
+
+    /// <summary>Binds the actor's copy to another input action (e.g. moving it to another slot); null for none.</summary>
+    public bool SetInput(AbilityHandle handle, StringName action)
+    {
+        Ability ability = Get(handle);
+        if (ability == null)
+            return false;
+
+        ability.InputAction = action;
+        ability.IsInputPressed = false;
+        return true;
+    }
+
+    /// <summary>
+    /// The input action was pressed: abilities bound to it activate, or, when already active, pass it to their tasks.
+    /// <see cref="AbilitySystemComponent.ProcessInput"/> calls this for the player.
+    /// </summary>
+    public void PressInput(StringName action)
+    {
+        for (int i = 0; i < _abilities.Count; i++)
+        {
+            Ability ability = _abilities[i];
+            if (!IsBound(ability, action))
+                continue;
+
+            ability.IsInputPressed = true;
+            if (ability.IsActive)
+                ability.ReceiveInput(pressed: true);
+            else
+                Activate(ability, false, default);
+        }
+    }
+
+    /// <summary>The input action was released: active abilities bound to it pass it to their tasks (e.g. a charge is let go).</summary>
+    public void ReleaseInput(StringName action)
+    {
+        for (int i = 0; i < _abilities.Count; i++)
+        {
+            Ability ability = _abilities[i];
+            if (!IsBound(ability, action))
+                continue;
+
+            ability.IsInputPressed = false;
+            ability.ReceiveInput(pressed: false);
+        }
     }
 
     public bool Cancel(AbilityHandle handle)
@@ -220,7 +316,7 @@ public sealed class AbilityContainer
         return false;
     }
 
-    private bool Activate(Ability ability)
+    private bool Activate(Ability ability, bool fromEvent, in AbilityEventData data)
     {
         ActivationFailure reason = Check(ability);
         if (reason != ActivationFailure.None)
@@ -253,9 +349,71 @@ public sealed class AbilityContainer
             AbilityActivated?.Invoke(ability);
 
         if (ability.IsActive)
-            ability.RunActivate();
+            ability.RunActivate(fromEvent, data);
 
         return true;
+    }
+
+    private static bool MatchesAny(Tag tag, TagContainer triggers)
+    {
+        for (int i = 0; triggers != null && i < triggers.Count; i++)
+        {
+            if (TagRegistry.Matches(tag, triggers[i]))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsBound(Ability ability, StringName action)
+    {
+        StringName bound = ability.InputAction;
+        return bound != null && !bound.IsEmpty && bound == action;
+    }
+
+    private void TrackTagTriggers(Ability ability)
+    {
+        _tagTriggered ??= new List<Ability>(2);
+        _tagTriggered.Add(ability);
+        if (_listeningToTags)
+            return;
+
+        _tags.PresenceChanged += _onTagPresenceChanged;
+        _listeningToTags = true;
+    }
+
+    private void UntrackTagTriggers(Ability ability)
+    {
+        if (_tagTriggered == null || !_tagTriggered.Remove(ability) || _tagTriggered.Count > 0)
+            return;
+
+        _tags.PresenceChanged -= _onTagPresenceChanged;
+        _listeningToTags = false;
+    }
+
+    /// <summary>
+    /// Raised for the changed tag and each of its parents, so trigger tags are matched exactly: a trigger on "State"
+    /// fires once "State.Stunned" makes "State" present.
+    /// </summary>
+    private void OnTagPresenceChanged(Tag tag, bool present)
+    {
+        for (int i = 0; i < _tagTriggered.Count; i++)
+        {
+            Ability ability = _tagTriggered[i];
+            TagContainer whilePresent = ability.TriggerWhileTagPresent;
+            bool onWhilePresent = whilePresent != null && whilePresent.HasExact(tag);
+
+            if (present)
+            {
+                bool onAdded = ability.TriggerOnTagAdded != null && ability.TriggerOnTagAdded.HasExact(tag);
+                if ((onAdded || onWhilePresent) && !ability.IsActive)
+                    Activate(ability, false, default);
+            }
+            else if (onWhilePresent && ability.IsActive && !ability.IsEnding && !_tags.HasAny(whilePresent))
+            {
+                ability.Finish(cancelled: true);
+            }
+        }
     }
 
     /// <summary>Cancels active abilities matching <paramref name="tags"/> (all when null), except <paramref name="except"/>.</summary>

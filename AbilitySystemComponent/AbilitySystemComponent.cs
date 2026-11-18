@@ -22,6 +22,7 @@ public partial class AbilitySystemComponent : Node
     private string[] _attributeSets = Array.Empty<string>();
     private EffectData[] _startingEffects = Array.Empty<EffectData>();
     private Resource[] _startingAbilities = Array.Empty<Resource>();
+    private bool _processInput;
     private bool _started;
 
     public AbilitySystemComponent()
@@ -59,6 +60,22 @@ public partial class AbilitySystemComponent : Node
     {
         get => _startingAbilities;
         set => _startingAbilities = value ?? Array.Empty<Resource>();
+    }
+
+    /// <summary>
+    /// Passes unhandled input of the abilities' input actions to <see cref="AbilityContainer.PressInput"/> and
+    /// <see cref="AbilityContainer.ReleaseInput"/> (and marks it handled). For the player; leave off for AI.
+    /// </summary>
+    [Export]
+    public bool ProcessInput
+    {
+        get => _processInput;
+        set
+        {
+            _processInput = value;
+            if (IsInsideTree())
+                SetProcessUnhandledInput(value && !Engine.IsEditorHint());
+        }
     }
 
     /// <summary>The parent node; set when the node first enters the tree.</summary>
@@ -123,6 +140,38 @@ public partial class AbilitySystemComponent : Node
         }
     }
 
+    // Godot turns unhandled input on for every node overriding _UnhandledInput when it becomes ready; only the
+    // player's component needs it.
+    public override void _Ready() => SetProcessUnhandledInput(_processInput && !Engine.IsEditorHint());
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (!_processInput || Abilities == null)
+            return;
+
+        bool handled = false;
+        for (int i = 0; i < Abilities.Count; i++)
+        {
+            StringName action = Abilities[i].InputAction;
+            if (action == null || action.IsEmpty || IsBoundEarlier(i, action))
+                continue;
+
+            if (@event.IsActionPressed(action))
+            {
+                Abilities.PressInput(action);
+                handled = true;
+            }
+            else if (@event.IsActionReleased(action))
+            {
+                Abilities.ReleaseInput(action);
+                handled = true;
+            }
+        }
+
+        if (handled)
+            GetViewport().SetInputAsHandled();
+    }
+
     public override void _Notification(int what)
     {
         // Freed, not just removed from the tree: timers would otherwise keep running effects of a dead actor.
@@ -131,6 +180,18 @@ public partial class AbilitySystemComponent : Node
 
         Abilities?.CancelAll();
         Effects.RemoveAll();
+    }
+
+    /// <summary>Several abilities may share an action; it is passed on once.</summary>
+    private bool IsBoundEarlier(int index, StringName action)
+    {
+        for (int i = 0; i < index; i++)
+        {
+            if (Abilities[i].InputAction == action)
+                return true;
+        }
+
+        return false;
     }
 
     // Godot API: the property info arrives as a Godot Dictionary.

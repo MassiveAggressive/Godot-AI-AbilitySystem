@@ -1,6 +1,6 @@
 # Ability Sistemi — Plan
 
-> Durum: plan **kullanıcı onaylı**; Faz 1 **uygulandı** (2026-11-18), Godot içinde (headless) 71 test. UI'nin her kare sorduğu kontroller (`CanActivate`, `CooldownRemaining`, `CanAffordCost`, `IsOnCooldown`) 0 allocation. Faz 2 bekliyor.
+> Durum: plan **kullanıcı onaylı**; Faz 1 ve 2 **uygulandı** (2026-11-18), Godot içinde (headless) 108 test. UI'nin her kare sorduğu kontroller (`CanActivate`, `CooldownRemaining`, `CanAffordCost`, `IsOnCooldown`), tag tetikleyicisi varken tag değişimi ve task'a olay iletimi 0 allocation.
 >
 > Uygulamada netleşenler (Faz 1):
 > - `AbilityContainer(attributes, tags, effects, actor = null, abilitySystem = null)`: düğümler sonda ve isteğe bağlı.
@@ -9,6 +9,13 @@
 > - `Activate` exception atarsa ability iptal edilir (owned tag'ler geri alınır), exception çağırana gider.
 > - Owned tag dinleyicisi ability'yi aktifleşirken bitirirse `AbilityActivated` çalışmaz, `AbilityEnded` çalışır; `TryActivate` true döner.
 > - Ekler: `Ability.IsOnCooldown`, `WaitDelayTask.Remaining` (cast bar). Bitmiş task'lar yeni task başlarken listeden düşer.
+>
+> Uygulamada netleşenler (Faz 2):
+> - `SendEvent` etkinleştirdiği ability sayısını döner. Zaten aktif ability olayla yeniden tetiklenmez; olayla aktifleşen ability aynı olayı kendi task'ından almaz. Tetikleme de normal şartlara (tag, cooldown, maliyet) bakar.
+> - Tag tetikleyicileri tam eşleşir, ama `PresenceChanged` parent'lar için de geldiğinden `State` tetikleyicisi `State.Stunned` ile çalışır. `TriggerWhileTagPresent` sayaç sıfıra inince iptal eder.
+> - `WaitEventTask(tag, onlyOnce = true)`, `WaitTagTask` (durum zaten öyleyse hemen), `WaitInputReleaseTask` (giriş basılı değilse hemen 0 ile; `HeldTime`). Yardımcılar: `WaitEvent(tag, received, onlyOnce)`, `WaitTag(tag, completed, present = true)`, `WaitInputRelease(released)`.
+> - `Ability.IsInputPressed`; `PressInput`/`ReleaseInput` aynı action'a bağlı tüm ability'lere gider. ASC `ProcessInput` aynı action'ı bir kez iletir, `_Ready`'de işlemeyi açar/kapatır (Godot `_UnhandledInput` override edeni kendiliğinden açar).
+> - Olay/giriş task'lara iletilirken bitmiş task'lar listeden düşmez (yürüyüş bozulmasın); o sırada başlayan task bir sonrakini bekler.
 > Karşılığı: Unreal `UGameplayAbility`, `FGameplayAbilitySpec(Handle)`, `UAbilityTask`, `FGameplayEventData`, `UAbilitySystemComponent`.
 > Ön koşul: PROGRESS'teki editör kontrolü (`[Tool]` olmayan alt sınıfı `.tres` olarak kaydedip yeniden açma). Ability'ler aynı yer tutucu mekanizmasına dayanıyor.
 

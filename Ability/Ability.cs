@@ -42,6 +42,9 @@ public abstract partial class Ability : Resource
     // How many of the owned tags were given, so ending takes back exactly those.
     private int _ownedTagCount;
 
+    // While events or input reach the tasks, finished tasks stay in the list so the walk over it is not disturbed.
+    private int _deliveryDepth;
+
     /// <summary>What this ability is (e.g. "Ability.Fire.Ball"); matched by cancel and block tags of other abilities.</summary>
     [ExportGroup("Tags")]
     [Export]
@@ -80,6 +83,34 @@ public abstract partial class Ability : Resource
     [Export]
     public bool CommitOnActivate { get; set; } = true;
 
+    /// <summary>
+    /// Activates when an event matching any of these (hierarchically) is sent to the actor; override
+    /// <see cref="ActivateFromEvent"/> to read the event.
+    /// </summary>
+    [ExportGroup("Triggers")]
+    [Export]
+    public TagContainer TriggerEventTags { get; set; }
+
+    /// <summary>Activates when the actor gets any of these.</summary>
+    [Export]
+    public TagContainer TriggerOnTagAdded { get; set; }
+
+    /// <summary>Activates when the actor gets any of these (or is given the ability while it has one), cancelled when it has none of them any more.</summary>
+    [Export]
+    public TagContainer TriggerWhileTagPresent { get; set; }
+
+    /// <summary>Activates once when given (passive abilities; starting abilities activate when the component enters the tree).</summary>
+    [Export]
+    public bool ActivateOnGranted { get; set; }
+
+    /// <summary>
+    /// Pressing it activates the ability, or reaches its tasks while active (<see cref="AbilityContainer.PressInput"/>).
+    /// Change it per actor with <see cref="AbilityContainer.SetInput"/>.
+    /// </summary>
+    [ExportGroup("Input")]
+    [Export(PropertyHint.InputName)]
+    public StringName InputAction { get; set; }
+
     /// <summary>The .tres this copy was made from; null on the definition itself.</summary>
     public Ability Definition { get; private set; }
 
@@ -90,6 +121,9 @@ public abstract partial class Ability : Resource
 
     /// <summary>From activation until the end (including <see cref="OnEnd"/>).</summary>
     public bool IsActive { get; private set; }
+
+    /// <summary>True between <see cref="AbilityContainer.PressInput"/> and <see cref="AbilityContainer.ReleaseInput"/> of its action.</summary>
+    public bool IsInputPressed { get; internal set; }
 
     /// <summary>The actor that owns the ability (the parent of its <see cref="AbilitySystemComponent"/>); may be null.</summary>
     public Node Actor { get; private set; }
@@ -159,8 +193,13 @@ public abstract partial class Ability : Resource
     /// <summary>Increases with every activation in the container; tells abilities activated during a call apart.</summary>
     internal int ActivationId { get; private set; }
 
+    internal bool HasTagTriggers => HasTags(TriggerOnTagAdded) || HasTags(TriggerWhileTagPresent);
+
     /// <summary>What the ability does. Call <see cref="End"/> when it is done; it may end right here.</summary>
     protected abstract void Activate();
+
+    /// <summary>Activation by one of <see cref="TriggerEventTags"/>; calls <see cref="Activate"/> unless overridden.</summary>
+    protected virtual void ActivateFromEvent(in AbilityEventData data) => Activate();
 
     /// <summary>Clean up here. Tasks are already stopped; owned tags are still present.</summary>
     protected virtual void OnEnd(bool cancelled)
@@ -203,6 +242,33 @@ public abstract partial class Ability : Resource
         return RunTask(task);
     }
 
+    /// <summary>
+    /// Runs <paramref name="received"/> when an event matching <paramref name="tag"/> is sent to the actor; only for
+    /// the first one unless <paramref name="onlyOnce"/> is off. Not for the event that activated the ability.
+    /// </summary>
+    protected WaitEventTask WaitEvent(Tag tag, AbilityEventHandler received, bool onlyOnce = true)
+    {
+        var task = new WaitEventTask(tag, onlyOnce);
+        task.Received += received;
+        return RunTask(task);
+    }
+
+    /// <summary>Runs <paramref name="completed"/> once the actor has <paramref name="tag"/> (with <paramref name="present"/> off: no longer has it); right away if it already is so.</summary>
+    protected WaitTagTask WaitTag(Tag tag, Action completed, bool present = true)
+    {
+        var task = new WaitTagTask(Tags, tag, present);
+        task.Completed += completed;
+        return RunTask(task);
+    }
+
+    /// <summary>Runs <paramref name="released"/> with the seconds held once the input is released; right away with 0 if it is not held.</summary>
+    protected WaitInputReleaseTask WaitInputRelease(Action<float> released)
+    {
+        var task = new WaitInputReleaseTask(!IsInputPressed);
+        task.Released += released;
+        return RunTask(task);
+    }
+
     /// <summary>Starts <paramref name="task"/>; it ends when the ability ends. Only while active.</summary>
     protected T RunTask<T>(T task) where T : AbilityTask
     {
@@ -218,7 +284,9 @@ public abstract partial class Ability : Resource
         _tasks ??= new List<AbilityTask>(2);
 
         // Finished tasks are dropped here, so a long activation starting many tasks does not keep them all.
-        _tasks.RemoveAll(static t => !t.IsRunning);
+        if (_deliveryDepth == 0)
+            _tasks.RemoveAll(static t => !t.IsRunning);
+
         _tasks.Add(task);
         task.Start();
         return task;
@@ -289,11 +357,14 @@ public abstract partial class Ability : Resource
         }
     }
 
-    internal void RunActivate()
+    internal void RunActivate(bool fromEvent, in AbilityEventData data)
     {
         try
         {
-            Activate();
+            if (fromEvent)
+                ActivateFromEvent(data);
+            else
+                Activate();
         }
         catch
         {
@@ -334,4 +405,50 @@ public abstract partial class Ability : Resource
 
         _ended?.Invoke(this, cancelled);
     }
+
+    /// <summary>Passes an event to the running tasks; tasks started meanwhile wait for the next one.</summary>
+    internal void ReceiveEvent(in AbilityEventData data)
+    {
+        if (!IsActive || _tasks == null)
+            return;
+
+        _deliveryDepth++;
+        try
+        {
+            int count = _tasks.Count;
+            for (int i = 0; i < count && i < _tasks.Count; i++)
+            {
+                if (_tasks[i].IsRunning)
+                    _tasks[i].DeliverEvent(data);
+            }
+        }
+        finally
+        {
+            _deliveryDepth--;
+        }
+    }
+
+    /// <summary>Passes a press or release of the input action to the running tasks.</summary>
+    internal void ReceiveInput(bool pressed)
+    {
+        if (!IsActive || _tasks == null)
+            return;
+
+        _deliveryDepth++;
+        try
+        {
+            int count = _tasks.Count;
+            for (int i = 0; i < count && i < _tasks.Count; i++)
+            {
+                if (_tasks[i].IsRunning)
+                    _tasks[i].DeliverInput(pressed);
+            }
+        }
+        finally
+        {
+            _deliveryDepth--;
+        }
+    }
+
+    private static bool HasTags(TagContainer tags) => tags != null && tags.Count > 0;
 }

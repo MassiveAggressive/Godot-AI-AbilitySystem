@@ -21,12 +21,14 @@
 
 - Ability Faz 1: `Ability`, `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityTask`, `WaitDelayTask`, `AbilitySystemComponent`; Effect/Attribute ekleri; 71 test — [Claude, 2026-11-18]
 
+- Ability Faz 2: `AbilityEventData`, `SendEvent`, tetikleyiciler (olay, tag geldi, tag varken), pasif, giriş (`PressInput`/`ReleaseInput`, ASC `ProcessInput`), `WaitEventTask`, `WaitTagTask`, `WaitInputReleaseTask`; Faz 1 ile birlikte 108 test — [Claude, 2026-11-18]
+
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Kullanıcı: editörde ASC'nin `AttributeSets` menüsü, `StartingAbilities` menüsü (yalnızca `Ability` alt sınıfları) ve bir `Ability` alt sınıfının `.tres`'inde `Tags`/`Commit` grupları
-- [ ] Ability Faz 2 (`Systems/Ability.md` → Faz 2)
+- [ ] Kullanıcı: editörde ASC'nin `AttributeSets` menüsü, `StartingAbilities` menüsü (yalnızca `Ability` alt sınıfları), `ProcessInput`; bir `Ability` alt sınıfının `.tres`'inde `Tags`/`Commit`/`Triggers`/`Input` grupları ve `InputAction` menüsü
+- [ ] Sıradaki iş kullanıcıyla belirlenecek (`IDEAS.md`)
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
