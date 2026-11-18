@@ -17,13 +17,15 @@
 - Effect Faz 3: Custom magnitude (`MagnitudeCalculation`), execution (`ExecutionCalculation`, `ExecutionOutput`), `CalculationContext`, inhibition, `RemovalTags`, bağışıklık; 60 test — [Claude, 2026-11-17]
 - Editör denemesi (kullanıcı): gruplar, gizlenen alanlar, tag ve attribute menüleri, `Calculation` ve `Executions` menüleri çalışıyor; `[Tool]` olmayan hesaplama alt sınıfları için `Resource` tipli export ile düzeltildi — [Claude, 2026-11-17]
 - Örnek sınıflar proje kökünde `Resource/` altında: `CombatSet`, `ArmorDamage`, `MissingHealthHeal` (repoya girmez) — [Claude, 2026-11-17]
+- Ability planı taslağı (`Systems/Ability.md`, Faz 1–3, açık kararlar K1–K6) — [Claude, 2026-11-18]
 
 ## Yapılıyor
 - (boş)
 
-## Yapılacak (sırayla, `Systems/Effect.md` → Uygulama Sırası)
-- [ ] Kullanıcı: Custom magnitude ve execution seçili bir `EffectData`'yı `.tres` olarak kaydedip yeniden aç, seçimler korunuyor mu kontrol et
-- [ ] Ability, Cooldown, AbilityTask, ASC, örnek sahne (Fireball): önce `Systems/Ability.md` planı, kullanıcı onayıyla
+## Yapılacak (sırayla)
+- [ ] Kullanıcı: Custom magnitude ve execution seçili bir `EffectData`'yı `.tres` olarak kaydedip yeniden aç, seçimler korunuyor mu kontrol et (Ability'ler de aynı yer tutucu mekanizmasına dayanıyor)
+- [ ] Kullanıcı: `Systems/Ability.md` K1–K6 kararlarını onayla/değiştir; onaydan sonra `ARCHITECTURE.md` ve `IDEAS.md` güncellenir
+- [ ] Ability Faz 1 → 2 → 3 (`Systems/Ability.md` → Uygulama Sırası)
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
