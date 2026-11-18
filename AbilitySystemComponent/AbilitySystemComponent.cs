@@ -7,8 +7,8 @@ namespace AbilitySystem;
 /// <summary>
 /// Gives its parent (the actor) attributes, tags, effects and abilities. Add it as a child of the actor, pick the
 /// attribute sets, starting effects (e.g. an instant effect setting initial values) and starting abilities in the
-/// inspector. Everything is ready once the node enters the tree, before any _Ready; the containers exist from
-/// construction, so code may also add sets and abilities itself:
+/// inspector. Everything is created when the node first enters the tree, so it is ready in every _Ready; code may
+/// add more sets and abilities from there:
 /// <code>
 /// var asc = AbilitySystemComponent.Find(body);
 /// asc?.Effects.Apply(hitSpec);
@@ -24,17 +24,6 @@ public partial class AbilitySystemComponent : Node
     private Resource[] _startingAbilities = Array.Empty<Resource>();
     private bool _processInput;
     private bool _started;
-
-    public AbilitySystemComponent()
-    {
-        // In the editor the tag registry is not loaded and nothing runs.
-        if (Engine.IsEditorHint())
-            return;
-
-        Attributes = new AttributeContainer();
-        Tags = new TagCountContainer();
-        Effects = new ActiveEffectContainer(Attributes, Tags);
-    }
 
     /// <summary>Attribute set classes added when the node enters the tree (e.g. "CombatSet").</summary>
     [Export]
@@ -81,13 +70,14 @@ public partial class AbilitySystemComponent : Node
     /// <summary>The parent node; set when the node first enters the tree.</summary>
     public Node Actor { get; private set; }
 
-    public AttributeContainer Attributes { get; }
+    // All created when the node first enters the tree: the main scene is instantiated before the autoloads enter
+    // the tree, so the tag registry is not loaded yet at construction.
+    public AttributeContainer Attributes { get; private set; }
 
-    public TagCountContainer Tags { get; }
+    public TagCountContainer Tags { get; private set; }
 
-    public ActiveEffectContainer Effects { get; }
+    public ActiveEffectContainer Effects { get; private set; }
 
-    /// <summary>Created when the node first enters the tree (abilities need the actor).</summary>
     public AbilityContainer Abilities { get; private set; }
 
     /// <summary><paramref name="node"/> itself or its first direct child that is an ability system component; null if none.</summary>
@@ -117,6 +107,9 @@ public partial class AbilitySystemComponent : Node
 
         _started = true;
         Actor = GetParent();
+        Attributes = new AttributeContainer();
+        Tags = new TagCountContainer();
+        Effects = new ActiveEffectContainer(Attributes, Tags);
         Abilities = new AbilityContainer(Attributes, Tags, Effects, Actor, this);
 
         foreach (string setName in _attributeSets)

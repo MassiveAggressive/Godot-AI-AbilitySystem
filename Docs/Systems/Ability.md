@@ -4,7 +4,7 @@
 >
 > Uygulamada netleşenler (Faz 1):
 > - `AbilityContainer(attributes, tags, effects, actor = null, abilitySystem = null)`: düğümler sonda ve isteğe bağlı.
-> - ASC: `Attributes`, `Tags`, `Effects` constructor'da (editörde değil) kurulur; `Abilities` ve başlangıç içeriği ilk `_EnterTree`'de (hiçbir `_Ready`'den önce, `_Ready` değil). Yeniden parent'lama durumu korur.
+> - ASC: tüm container'lar ve başlangıç içeriği ilk `_EnterTree`'de (hiçbir `_Ready`'den önce). Constructor'da değil: ana sahne, autoload'lar (`TagLoader`) ağaca girmeden instantiate edilir, `TagRegistry` o an boştur. Yeniden parent'lama durumu korur.
 > - `TryActivate(Ability)` tanımı da kopyayı da kabul eder; `Give(kopya)` reddedilir (hata).
 > - `Activate` exception atarsa ability iptal edilir (owned tag'ler geri alınır), exception çağırana gider.
 > - Owned tag dinleyicisi ability'yi aktifleşirken bitirirse `AbilityActivated` çalışmaz, `AbilityEnded` çalışır; `TryActivate` true döner.
@@ -41,7 +41,7 @@
 |---|---|
 | 1 | `Ability`, `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityTask`, `WaitDelayTask`, `AbilitySystemComponent`; tag kuralları, cooldown, maliyet, commit, bitirme ve iptal. Effect/Attribute ekleri. |
 | 2 | `AbilityEventData`, olay gönderme, tetikleyiciler, pasif ability, giriş; `WaitEventTask`, `WaitTagTask`, `WaitInputReleaseTask`. |
-| 3 | (Atlandı, K6) Örnek sahne. |
+| 3 | Örnek sahne (Fireball); K6 önce "yok" idi, kullanıcı sonradan istedi (2026-11-18). Uygulandı, aşağıda. |
 
 ## Faz 1 — Çekirdek
 
@@ -123,7 +123,7 @@ public partial class Fireball : Ability
 ### AbilitySystemComponent (Node)
 - Sahip olduğu: `Attributes`, `Tags`, `Effects`, `Abilities`; `Actor` = parent. Mantık taşımaz, container'ları kurar ve bağlar.
 - Export: `AttributeSets` (`string[]`, kayıtlı set adlarından menü), `StartingEffects` (`EffectData[]`, ör. başlangıç değerlerini Override eden Instant effect), `StartingAbilities` (`Resource[]`, menü `Ability` ile sınırlı, çalışma anında cast; yer tutucu kuralı).
-- Constructor (editörde değil): `Attributes`, `Tags`, `Effects`. İlk `_EnterTree`: `Abilities` → set'ler → başlangıç effect'leri → başlangıç ability'leri. Tüm `_Ready`'ler hepsini hazır görür. Kodla eklenen set'lere başlangıç effect'i değmez (bunları ya export'ta seç ya effect'i kendin uygula).
+- İlk `_EnterTree` (editörde değil): container'lar → set'ler → başlangıç effect'leri → başlangıç ability'leri. Tüm `_Ready`'ler hepsini hazır görür. Kodla eklenen set'lere başlangıç effect'i değmez (bunları ya export'ta seç ya effect'i kendin uygula).
 - Silinirken (`NotificationPredelete`; yeniden parent'lamada değil): `Abilities.CancelAll()`, `Effects.RemoveAll()`. Böylece ölü aktörde timer çalışmaz.
 - `static AbilitySystemComponent Find(Node node)`: düğümün kendisi veya doğrudan çocuğu; yoksa null.
 
@@ -145,6 +145,14 @@ public partial class Fireball : Ability
 - Giriş: `Ability.InputAction` (`[Export(PropertyHint.InputName)]`, yer tutucuda da menü çıkar), yuva değiştirmek için `Abilities.SetInput(handle, action)`. `Abilities.PressInput(StringName)`: aktif değilse dener, aktifse task'lara iletir; `ReleaseInput(StringName)`. ASC export `ProcessInput = false`: açıksa `_UnhandledInput`'ta bağlı action'ları kendisi iletir (oyuncu için).
 - Task'lar: `WaitEventTask(Tag)` (olay verisiyle), `WaitTagTask(TagCountContainer, Tag, bool present)`, `WaitInputReleaseTask` (geçen süreyle; şarjlı yetenek). Ability yardımcıları: `WaitEvent`, `WaitTag`, `WaitInputRelease`.
 
+## Faz 3 — Örnek Sahne (uygulandı; proje kökünde, repoya girmez)
+- `Resource/Scenes/FireballDemo/FireballDemo.tscn` (2D): oyuncu ve hedef kukla (`Combatant : Area2D`, kendi alt `AbilitySystemComponent`'leri), HUD etiketi. `1` tuşu Fireball'u atar, `R` kukla canını doldurur. Çalıştırmak için sahneyi aç, F6 (`run/main_scene` hâlâ `Test/AbilityDemo`).
+- `Resource/Abilities/Fireball.cs` + `Fireball.tres`: 0.3 sn cast, mermi; maliyet Mana −20 ve cooldown 1.5 sn (`Cooldown.Fireball`) `.tres` içinde gömülü; `InputAction = ability_1`.
+- `Resource/Effects/`: `FireballDamage.tres` (Instant, `ArmorDamage`, sabit 50), `PlayerInit.tres` (AttackPower → 30), `DummyInit.tres` (Armor → 20), ikisi ASC `StartingEffects`'inden.
+- `FireballProjectile` (Area2D): sahnedeki `Combatant` alanına değince `AbilitySystemComponent.Find` ile hedefin effect'lerine spec'i uygular. `CombatSet`'e `Mana`, `MaxMana` eklendi; `Tags.tres`'e `Cooldown.Fireball`.
+- `ability_1` action'ı `FireballDemo._EnterTree`'de koda kayıtlı (yoksa), `project.godot`'a dokunulmadı. Timers eklentisi kapalıysa `TimerManager`'ı demo kendisi ekler.
+- Doğrulama: headless, gerçek sahne ve `Input.ParseInputEvent` ile: cast, mana −20, cooldown 1.5, kukla 100 → 78.57 (30 × 50/70 hasar), cooldown'da ikinci basış mana harcamadı.
+
 ## Bağımlılıklar
 ```
 AbilitySystemComponent ──► AbilityContainer ──► Ability ──► WaitDelayTask, Wait*Task ──► AbilityTask ──► AbilityEventData
@@ -163,7 +171,7 @@ Ability, AbilityContainer'ı ve ASC'yi; task'lar Ability'yi bilmez. Effect ve At
 - Faz 2: olayla tetikleme (hiyerarşik), tag geldi/var tetikleyicileri, pasif, giriş basma/bırakma, üç task.
 
 ## Uygulama Sırası
-1. Effect/Attribute ekleri. 2. `AbilityHandle`, `AbilityTask`, `WaitDelayTask`. 3. `Ability`. 4. `AbilityContainer`, `ActivationFailure`. 5. `AbilitySystemComponent`. 6. Faz 1 testleri, `ARCHITECTURE.md`, `IDEAS.md`. 7. Faz 2.
+1. Effect/Attribute ekleri. 2. `AbilityHandle`, `AbilityTask`, `WaitDelayTask`. 3. `Ability`. 4. `AbilityContainer`, `ActivationFailure`. 5. `AbilitySystemComponent`. 6. Faz 1 testleri, `ARCHITECTURE.md`, `IDEAS.md`. 7. Faz 2. 8. Faz 3 (örnek sahne).
 
 ## Bu Planın Dışında (IDEAS'a taşınacak)
 Örneksiz ve çalıştırma başına örnekleme, aktifken yeniden tetikleme (`bRetriggerInstancedAbility`), `await` ile task, animasyon task'ı (`PlayAnimationAndWait`), hedefleme, kaynak/hedef tag şartları, effect seviyesi ve eğri (maliyet/cooldown ölçekleme), aynı ability'yi birden fazla kaynağın vermesi (sayaç), başarısızlık tag'leri, animasyondan olay gönderme.

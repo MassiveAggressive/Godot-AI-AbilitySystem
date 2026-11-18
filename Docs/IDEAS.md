@@ -27,7 +27,6 @@
 - Ability seviyesi ve eğriyle maliyet/cooldown ölçekleme (maliyette SetByCaller de buna bağlı).
 - Kaynak/hedef tag şartları; başarısızlık tag'leri.
 - Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
-- Örnek sahne (Fireball): şimdilik yapılmadı.
 
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
