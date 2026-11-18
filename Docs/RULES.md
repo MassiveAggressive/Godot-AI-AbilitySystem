@@ -39,3 +39,4 @@ metadata/_custom_type_script = "uid://bbf8lyuj8omp1"
 - Mimari kararlar ilgili `Docs/Systems/<Sistem>.md` dosyasına yazılır. Kural çelişkisi → düzeltme yerine `PROGRESS.md` notu.
 - Kuralları değiştirme (kullanıcıya sor). İstenmeyen refactor, dosya, özellik ekleme.
 - Git bu klasörde (`git -C addons/AbilitySystem`). `Test/` kullanıcıya ait.
+- Test: kod yazan yapay zeka test sahnesi yazmaz ve çalıştırmaz; yalnızca derlemenin temiz olduğunu kontrol eder. Testleri kullanıcı ayrı bir modelle yapar (kullanıcı kararı, 2026-11-18). Testle ilgili beklenen davranışlar plan dokümanında kalır.

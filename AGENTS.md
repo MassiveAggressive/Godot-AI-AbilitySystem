@@ -7,6 +7,7 @@ Godot 4 C# addon, Unreal GAS benzeri. Namespace `AbilitySystem`. Kullandığı a
 - Her sınıf `addons/AbilitySystem/<Sınıf>/` klasöründe. Projeye özel veri proje kökündeki `Resource/`'da.
 - Sahne: düğüm doğrudan özel sınıftan yaratılır (`script` + `metadata/_custom_type_script`), UID `.cs.uid`'den.
 - Hot-path'te allocation/LINQ/boxing yok; mümkünse saf C#.
+- Test yazma/çalıştırma yok (kullanıcı ayrı yapar); yalnızca derlemeyi kontrol et.
 - Git bu klasörde çalışır. `Test/` kullanıcıya ait, dokunma. Kapsam dışı değişiklik yok, kuralları kendi başına değiştirme.
 
 ## Dokümanlar (yalnızca gerekince oku)
