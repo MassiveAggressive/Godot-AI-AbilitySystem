@@ -1,6 +1,6 @@
 # Ability Sistemi — Plan
 
-> Durum: **taslak, kullanıcı onayı bekliyor** (2026-11-18). Onay bekleyen kararlar "Kararlar" tablosunda **K1–K6**.
+> Durum: plan **kullanıcı onaylı**, uygulama başlamadı (2026-11-18). K1–K6 kararları "Kararlar" tablosunda.
 > Karşılığı: Unreal `UGameplayAbility`, `FGameplayAbilitySpec(Handle)`, `UAbilityTask`, `FGameplayEventData`, `UAbilitySystemComponent`.
 > Ön koşul: PROGRESS'teki editör kontrolü (`[Tool]` olmayan alt sınıfı `.tres` olarak kaydedip yeniden açma). Ability'ler aynı yer tutucu mekanizmasına dayanıyor.
 
@@ -11,12 +11,12 @@
 ## Kararlar
 | # | Konu | Karar |
 |---|---|---|
-| K1 | Ability'nin yapısı | Kullanıcı soyut `Ability` Resource'undan `[GlobalClass]` alt sınıf yazar: ayarlar export, mantık override. `.tres` tanımdır (paylaşılır); verilince aktör başına `Duplicate()` ile kopya oluşur, durum kopyanın alanlarında tutulur (Unreal `InstancedPerActor`). Ayrı `AbilityData` yok. **Onay bekliyor** |
-| K2 | AbilityTask | Callback tabanlı (Unreal gibi): `WaitDelay(0.3f, Launch)`. Ability bitince çalışan task'lar durur, callback'leri gelmez. `await` desteği sonra bunun üstüne eklenebilir (IDEAS). **Onay bekliyor** |
-| K3 | Commit | `CommitOnActivate = true` (varsayılan): maliyet ve cooldown `Activate`'ten önce uygulanır. Kapalıysa kullanıcı `Commit()` çağırır (şarjlı yetenek bırakınca öder). Unreal'da her zaman elle. **Onay bekliyor** |
-| K4 | Cooldown | Ayrı `Cooldown` sınıfı yok (ARCHITECTURE'daki satır kalkar). `Ability.Cooldown` bir `EffectData`: HasDuration + `GrantedTags` (ör. `Cooldown.Fireball`); owner'da tag varken aktifleşmez. Maliyet de `EffectData` (Instant). İkisi de ability `.tres`'inin içinde gömülü alt resource olarak yaratılabilir, ayrı dosya gerekmez. **Onay bekliyor** |
-| K5 | Aynı ability ikinci kez verilirse | Yeni kayıt açılmaz, mevcut handle döner (tanım başına bir kayıt). **Onay bekliyor** |
-| K6 | Örnek sahnenin yeri | Proje kökünde (repoya girmez): `Resource/Abilities/`, `Resource/Effects/`, `Resource/Scenes/FireballDemo/`. 2D. **Onay bekliyor** |
+| K1 | Ability'nin yapısı | Kullanıcı soyut `Ability` Resource'undan `[GlobalClass]` alt sınıf yazar: ayarlar export, mantık override. `.tres` tanımdır (paylaşılır); verilince aktör başına `Duplicate()` ile kopya oluşur, durum kopyanın alanlarında tutulur (Unreal `InstancedPerActor`). Ayrı `AbilityData` yok. **Kullanıcı** |
+| K2 | AbilityTask | Callback tabanlı (Unreal gibi): `WaitDelay(0.3f, Launch)`. Ability bitince çalışan task'lar durur, callback'leri gelmez. `await` desteği sonra bunun üstüne eklenebilir (IDEAS). **Kullanıcı** |
+| K3 | Commit | `CommitOnActivate = true` (varsayılan): maliyet ve cooldown `Activate`'ten önce uygulanır. Kapalıysa kullanıcı `Commit()` çağırır (şarjlı yetenek bırakınca öder). Unreal'da her zaman elle. **Kullanıcı** |
+| K4 | Cooldown | Ayrı `Cooldown` sınıfı yok (ARCHITECTURE'daki satır kalkar). `Ability.Cooldown` bir `EffectData`: HasDuration + `GrantedTags` (ör. `Cooldown.Fireball`); owner'da tag varken aktifleşmez. Maliyet de `EffectData` (Instant). İkisi de ability `.tres`'inin içinde gömülü alt resource olarak yaratılabilir, ayrı dosya gerekmez. **Kullanıcı** |
+| K5 | Aynı ability ikinci kez verilirse | Yeni kayıt açılmaz, mevcut handle döner (tanım başına bir kayıt). **Kullanıcı** |
+| K6 | Örnek sahne | Şimdilik yok; Faz 3 atlandı. Ability'ler headless testlerle doğrulanır. **Kullanıcı** |
 | — | Bağımlılık | Ability, `AbilityContainer`'ı ve ASC'yi bilmez; ASC ona `Node` olarak verilir (`ModifierSource.InstigatorAbilitySystem` gibi). Task'lar Ability'yi bilmez. Döngü yok. |
 | — | Örnekleme | Yalnızca aktör başına kopya; Ability aynı anda bir kez aktif olabilir. Örneksiz ve çalıştırma başına kopya ileride (IDEAS). |
 | — | Hedefleme, ağ | Kapsam dışı. Hedefi kullanıcı kodu bulur (ör. merminin çarptığı düğüm). |
@@ -26,7 +26,7 @@
 |---|---|
 | 1 | `Ability`, `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityTask`, `WaitDelayTask`, `AbilitySystemComponent`; tag kuralları, cooldown, maliyet, commit, bitirme ve iptal. Effect/Attribute ekleri. |
 | 2 | `AbilityEventData`, olay gönderme, tetikleyiciler, pasif ability, giriş; `WaitEventTask`, `WaitTagTask`, `WaitInputReleaseTask`. |
-| 3 | Örnek sahne (Fireball), `run/main_scene`. |
+| 3 | (Atlandı, K6) Örnek sahne. |
 
 ## Faz 1 — Çekirdek
 
@@ -130,11 +130,6 @@ public partial class Fireball : Ability
 - Giriş: `Ability.InputAction` (`[Export(PropertyHint.InputName)]`, yer tutucuda da menü çıkar), yuva değiştirmek için `Abilities.SetInput(handle, action)`. `Abilities.PressInput(StringName)`: aktif değilse dener, aktifse task'lara iletir; `ReleaseInput(StringName)`. ASC export `ProcessInput = false`: açıksa `_UnhandledInput`'ta bağlı action'ları kendisi iletir (oyuncu için).
 - Task'lar: `WaitEventTask(Tag)` (olay verisiyle), `WaitTagTask(TagCountContainer, Tag, bool present)`, `WaitInputReleaseTask` (geçen süreyle; şarjlı yetenek). Ability yardımcıları: `WaitEvent`, `WaitTag`, `WaitInputRelease`.
 
-## Faz 3 — Örnek Sahne (proje kökü, repoya girmez)
-- `CombatSet`'e `Mana`, `MaxMana`. `Resource/Abilities/Fireball.cs` + `Fireball.tres` (Cost: Mana −20, Cooldown: 3 sn `Cooldown.Fireball`, gömülü). `Resource/Effects/FireballDamage.tres` (Instant, `ArmorDamage`).
-- `Resource/Scenes/FireballDemo/`: oyuncu (ASC, `ProcessInput`), hedef kukla (ASC), `FireballProjectile` (Area2D), basit can/mana/cooldown etiketi. Input action `ability_1`, `run/main_scene` → `project.godot`.
-- Sahne kuralı: düğümler doğrudan sınıfından, UID `.cs.uid`'den (önce headless çalıştırma üretir).
-
 ## Bağımlılıklar
 ```
 AbilitySystemComponent ──► AbilityContainer ──► Ability ──► WaitDelayTask, Wait*Task ──► AbilityTask ──► AbilityEventData
@@ -153,7 +148,7 @@ Ability, AbilityContainer'ı ve ASC'yi; task'lar Ability'yi bilmez. Effect ve At
 - Faz 2: olayla tetikleme (hiyerarşik), tag geldi/var tetikleyicileri, pasif, giriş basma/bırakma, üç task.
 
 ## Uygulama Sırası
-1. Effect/Attribute ekleri. 2. `AbilityHandle`, `AbilityTask`, `WaitDelayTask`. 3. `Ability`. 4. `AbilityContainer`, `ActivationFailure`. 5. `AbilitySystemComponent`. 6. Faz 1 testleri, `ARCHITECTURE.md`, `IDEAS.md`. 7. Faz 2. 8. Faz 3 (örnek sahne).
+1. Effect/Attribute ekleri. 2. `AbilityHandle`, `AbilityTask`, `WaitDelayTask`. 3. `Ability`. 4. `AbilityContainer`, `ActivationFailure`. 5. `AbilitySystemComponent`. 6. Faz 1 testleri, `ARCHITECTURE.md`, `IDEAS.md`. 7. Faz 2.
 
 ## Bu Planın Dışında (IDEAS'a taşınacak)
 Örneksiz ve çalıştırma başına örnekleme, aktifken yeniden tetikleme (`bRetriggerInstancedAbility`), `await` ile task, animasyon task'ı (`PlayAnimationAndWait`), hedefleme, kaynak/hedef tag şartları, effect seviyesi ve eğri (maliyet/cooldown ölçekleme), aynı ability'yi birden fazla kaynağın vermesi (sayaç), başarısızlık tag'leri, animasyondan olay gönderme.

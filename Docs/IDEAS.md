@@ -19,13 +19,15 @@
 - **Gameplay Cue'lar:** effect'e bağlı görsel/ses geri bildirimi (başlama, bitme, çalıştırma). Godot'ta sahne/efekt bağlama tasarımı gerekir.
 - **Periyodik effect'te yığın eklenince çalıştırma:** yığın eklendiği anda bir kez çalıştırma seçeneği (şu an çalıştırılmıyor; Unreal'da da böyle olduğu doğrulanmadı).
 
-## Ability / ASC (planlanan işlerin eksik ayrıntıları; Ability planı yazılırken ele alınacak)
-- Ability tag kuralları: iptal eder, engeller, aktivasyon için gerekli/engelleyici tag'ler.
-- Instancing politikaları (örneksiz, aktör başına, çalıştırma başına).
-- Gameplay event'leri ile ability tetikleme.
+## Ability / ASC (`Systems/Ability.md` kapsamı dışında kalanlar)
+- Örneksiz ve çalıştırma başına örnekleme (şu an yalnızca aktör başına kopya).
+- Aktifken yeniden tetikleme (`bRetriggerInstancedAbility`).
+- `await` ile task; animasyon task'ı (`PlayAnimationAndWait`); animasyondan olay gönderme.
 - Hedefleme (target actor / hedef verisi).
-- Pasif ability'ler, ability seviyesi.
-- Giriş (input) bağlama.
+- Ability seviyesi ve eğriyle maliyet/cooldown ölçekleme (maliyette SetByCaller de buna bağlı).
+- Kaynak/hedef tag şartları; başarısızlık tag'leri.
+- Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
+- Örnek sahne (Fireball): şimdilik yapılmadı.
 
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).

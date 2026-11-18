@@ -23,9 +23,7 @@
 - (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Kullanıcı: Custom magnitude ve execution seçili bir `EffectData`'yı `.tres` olarak kaydedip yeniden aç, seçimler korunuyor mu kontrol et (Ability'ler de aynı yer tutucu mekanizmasına dayanıyor)
-- [ ] Kullanıcı: `Systems/Ability.md` K1–K6 kararlarını onayla/değiştir; onaydan sonra `ARCHITECTURE.md` ve `IDEAS.md` güncellenir
-- [ ] Ability Faz 1 → 2 → 3 (`Systems/Ability.md` → Uygulama Sırası)
+- [ ] Ability Faz 1 → 2 (`Systems/Ability.md` → Uygulama Sırası); K1–K6 kullanıcı onaylı, örnek sahne yok
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
