@@ -31,6 +31,7 @@
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
 - `TagCountContainer` için tag'e özel dinleyici.
+- **Tag seçme ağacı:** `TagContainer` için tag seçimi, Unreal'daki gibi hiyerarşik ağaç penceresiyle (ör. `State` → `Debuff` → `Stun`, `Action` → `Attack` → `Melee`/`Range`; düğümler açılıp kapanır, işaretlenerek eklenir). Şu an her tag, dropdown menüden tek tek seçiliyor (`TagContainer.BuildTagOptions`); tag sayısı artınca düz liste zorlaşıyor. Editör eklentisi (`#if TOOLS`) ve `TagContainer`'ın inspector alanı değişir; çalışma anı ve `Tags.tres` biçimi aynı kalır. Ayrıca aynı seçici tekil tag alanları için de kullanılabilir (`Magnitude.CallerTagName`, ability tetikleyicileri).
 
 ## Timers (Godot-AI-Timers reposu)
 - Zaman genişletme: aktöre/gruba özel zaman ölçeği (bullet-time, donma). Şu an tek global saat.
