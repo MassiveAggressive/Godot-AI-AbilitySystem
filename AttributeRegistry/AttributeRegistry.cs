@@ -15,6 +15,8 @@ public static class AttributeRegistry
     private static string[] _names;
     private static Dictionary<string, int> _idsByName;
     private static Dictionary<Type, SetInfo> _setsByType;
+    private static Dictionary<string, Type> _setTypesByName;
+    private static string[] _setNames;
 
     /// <summary>Number of ids including <see cref="AttributeId.None"/>; arrays of this size can be indexed by <see cref="AttributeId.Value"/>.</summary>
     public static int Count
@@ -58,6 +60,35 @@ public static class AttributeRegistry
         return string.Join(",", _names, 1, _names.Length - 1);
     }
 
+    /// <summary>Comma separated set class names for an editor dropdown.</summary>
+    internal static string BuildSetOptions()
+    {
+        EnsureInitialized();
+        return string.Join(",", _setNames);
+    }
+
+    /// <summary>A new set of the class named <paramref name="setName"/> (e.g. "CombatSet"); null if there is none.</summary>
+    internal static AttributeSet CreateSet(string setName)
+    {
+        EnsureInitialized();
+
+        if (setName == null || !_setTypesByName.TryGetValue(setName, out Type setType))
+        {
+            GD.PushError($"AttributeSet not found: '{setName}'.");
+            return null;
+        }
+
+        try
+        {
+            return (AttributeSet)Activator.CreateInstance(setType);
+        }
+        catch (MissingMethodException)
+        {
+            GD.PushError($"{setName} cannot be created by name: it needs a public parameterless constructor.");
+            return null;
+        }
+    }
+
     private static void EnsureInitialized()
     {
         if (_names == null)
@@ -69,12 +100,12 @@ public static class AttributeRegistry
         var names = new List<string> { string.Empty };
         var idsByName = new Dictionary<string, int>(StringComparer.Ordinal);
         var setsByType = new Dictionary<Type, SetInfo>();
-        var setNames = new HashSet<string>(StringComparer.Ordinal);
+        var setTypesByName = new Dictionary<string, Type>(StringComparer.Ordinal);
 
         foreach (Type setType in FindSetTypes())
         {
             // Dropdown names leave out the namespace, so class names must be unique.
-            if (!setNames.Add(setType.Name))
+            if (!setTypesByName.TryAdd(setType.Name, setType))
             {
                 GD.PushError($"AttributeSet class name '{setType.Name}' is used more than once; '{setType.FullName}' is skipped.");
                 continue;
@@ -96,6 +127,10 @@ public static class AttributeRegistry
 
         _idsByName = idsByName;
         _setsByType = setsByType;
+        _setTypesByName = setTypesByName;
+        _setNames = new string[setTypesByName.Count];
+        setTypesByName.Keys.CopyTo(_setNames, 0);
+        Array.Sort(_setNames, StringComparer.Ordinal);
         _names = names.ToArray();
     }
 

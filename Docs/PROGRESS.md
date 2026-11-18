@@ -19,15 +19,18 @@
 - Örnek sınıflar proje kökünde `Resource/` altında: `CombatSet`, `ArmorDamage`, `MissingHealthHeal` (repoya girmez) — [Claude, 2026-11-17]
 - Ability planı taslağı (`Systems/Ability.md`, Faz 1–3, açık kararlar K1–K6) — [Claude, 2026-11-18]
 
+- Ability Faz 1: `Ability`, `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityTask`, `WaitDelayTask`, `AbilitySystemComponent`; Effect/Attribute ekleri; 71 test — [Claude, 2026-11-18]
+
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Ability Faz 1 → 2 (`Systems/Ability.md` → Uygulama Sırası); K1–K6 kullanıcı onaylı, örnek sahne yok
+- [ ] Kullanıcı: editörde ASC'nin `AttributeSets` menüsü, `StartingAbilities` menüsü (yalnızca `Ability` alt sınıfları) ve bir `Ability` alt sınıfının `.tres`'inde `Tags`/`Commit` grupları
+- [ ] Ability Faz 2 (`Systems/Ability.md` → Faz 2)
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
-- Headless Godot çalıştırması yeni script'lerin `.cs.uid` dosyalarını da üretir; commit'e dahil et.
+- Yeni script'lerin `.cs.uid` dosyaları test sahnesi çalıştırmasıyla değil, `--headless --path <proje> --import` ile üretilir; commit'e dahil et.
 - `Attribute.md`'nin gövdesi Faz 0 öncesini anlatıyor; bir sonraki Attribute işinde güncellenmeli.
 - Ana sahne (`run/main_scene`) yok; örnek sahne eklenince proje kökündeki `project.godot`'a girilmeli.
 - Resource tabanlı attribute set fikri ertelendi (`Systems/Attribute.md` → İleride).

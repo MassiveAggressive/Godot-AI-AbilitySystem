@@ -1,6 +1,14 @@
 # Ability Sistemi — Plan
 
-> Durum: plan **kullanıcı onaylı**, uygulama başlamadı (2026-11-18). K1–K6 kararları "Kararlar" tablosunda.
+> Durum: plan **kullanıcı onaylı**; Faz 1 **uygulandı** (2026-11-18), Godot içinde (headless) 71 test. UI'nin her kare sorduğu kontroller (`CanActivate`, `CooldownRemaining`, `CanAffordCost`, `IsOnCooldown`) 0 allocation. Faz 2 bekliyor.
+>
+> Uygulamada netleşenler (Faz 1):
+> - `AbilityContainer(attributes, tags, effects, actor = null, abilitySystem = null)`: düğümler sonda ve isteğe bağlı.
+> - ASC: `Attributes`, `Tags`, `Effects` constructor'da (editörde değil) kurulur; `Abilities` ve başlangıç içeriği ilk `_EnterTree`'de (hiçbir `_Ready`'den önce, `_Ready` değil). Yeniden parent'lama durumu korur.
+> - `TryActivate(Ability)` tanımı da kopyayı da kabul eder; `Give(kopya)` reddedilir (hata).
+> - `Activate` exception atarsa ability iptal edilir (owned tag'ler geri alınır), exception çağırana gider.
+> - Owned tag dinleyicisi ability'yi aktifleşirken bitirirse `AbilityActivated` çalışmaz, `AbilityEnded` çalışır; `TryActivate` true döner.
+> - Ekler: `Ability.IsOnCooldown`, `WaitDelayTask.Remaining` (cast bar). Bitmiş task'lar yeni task başlarken listeden düşer.
 > Karşılığı: Unreal `UGameplayAbility`, `FGameplayAbilitySpec(Handle)`, `UAbilityTask`, `FGameplayEventData`, `UAbilitySystemComponent`.
 > Ön koşul: PROGRESS'teki editör kontrolü (`[Tool]` olmayan alt sınıfı `.tres` olarak kaydedip yeniden açma). Ability'ler aynı yer tutucu mekanizmasına dayanıyor.
 
@@ -81,7 +89,7 @@ public partial class Fireball : Ability
 - Commit sırası (Unreal gibi): cooldown, sonra maliyet.
 
 ### AbilityContainer
-- `AbilityContainer(Node actor, Node abilitySystem, AttributeContainer attributes, TagCountContainer tags, ActiveEffectContainer effects)`; ASC'siz de kurulabilir (actor/ASC null olabilir).
+- `AbilityContainer(AttributeContainer attributes, TagCountContainer tags, ActiveEffectContainer effects, Node actor = null, Node abilitySystem = null)`; ASC'siz de kurulabilir.
 - `AbilityHandle Give(Ability definition, int level = 1)`: kopyalar, bağlar, `AbilityGiven`. Aynı tanım zaten verilmişse mevcut handle (K5). `bool Remove(AbilityHandle)`: aktifse iptal eder, sonra çıkarır, `AbilityRemoved`.
 - `Ability Get(AbilityHandle)`, `Ability Find(Ability definition)`, `Count`, indexer.
 - `bool CanActivate(handle)` ve `CanActivate(handle, out ActivationFailure reason)`; `bool TryActivate(AbilityHandle)`, `TryActivate(Ability definition)`, `TryActivateWithTag(Tag)` (AssetTags'ı eşleşen ilk aktifleşebilen; AI için).
@@ -108,7 +116,7 @@ public partial class Fireball : Ability
 ### AbilitySystemComponent (Node)
 - Sahip olduğu: `Attributes`, `Tags`, `Effects`, `Abilities`; `Actor` = parent. Mantık taşımaz, container'ları kurar ve bağlar.
 - Export: `AttributeSets` (`string[]`, kayıtlı set adlarından menü), `StartingEffects` (`EffectData[]`, ör. başlangıç değerlerini Override eden Instant effect), `StartingAbilities` (`Resource[]`, menü `Ability` ile sınırlı, çalışma anında cast; yer tutucu kuralı).
-- `_Ready` (editörde değil): container'lar → set'ler → başlangıç effect'leri → başlangıç ability'leri. Parent'ın `_Ready`'si hepsini hazır görür. Kodla eklenen set'lere başlangıç effect'i değmez (bunları ya export'ta seç ya effect'i kendin uygula).
+- Constructor (editörde değil): `Attributes`, `Tags`, `Effects`. İlk `_EnterTree`: `Abilities` → set'ler → başlangıç effect'leri → başlangıç ability'leri. Tüm `_Ready`'ler hepsini hazır görür. Kodla eklenen set'lere başlangıç effect'i değmez (bunları ya export'ta seç ya effect'i kendin uygula).
 - Silinirken (`NotificationPredelete`; yeniden parent'lamada değil): `Abilities.CancelAll()`, `Effects.RemoveAll()`. Böylece ölü aktörde timer çalışmaz.
 - `static AbilitySystemComponent Find(Node node)`: düğümün kendisi veya doğrudan çocuğu; yoksa null.
 

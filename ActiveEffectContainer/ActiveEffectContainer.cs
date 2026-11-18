@@ -193,6 +193,55 @@ public sealed class ActiveEffectContainer
         return removed;
     }
 
+    /// <summary>
+    /// Removes every active effect, e.g. when the actor is freed, so no timer keeps running for it. Effects applied
+    /// by listeners during this call stay. Returns how many were removed.
+    /// </summary>
+    public int RemoveAll()
+    {
+        int lastHandle = EffectHandle.LastValue;
+        int removed = 0;
+        int i = 0;
+        while (i < _effects.Count)
+        {
+            ActiveEffect effect = _effects[i];
+            if (effect.Handle.Value > lastHandle)
+            {
+                i++;
+                continue;
+            }
+
+            Remove(effect);
+            removed++;
+            i = 0;
+        }
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Longest remaining time among the active, uninhibited effects that grant any of <paramref name="grantedTags"/>
+    /// (hierarchically); 0 if there is none. Used for cooldowns and buff timers.
+    /// </summary>
+    public float GetRemainingTime(TagContainer grantedTags)
+    {
+        if (grantedTags == null || grantedTags.Count == 0)
+            return 0f;
+
+        float longest = 0f;
+        for (int i = 0; i < _effects.Count; i++)
+        {
+            ActiveEffect effect = _effects[i];
+            TagContainer granted = effect.Data.GrantedTags;
+            if (effect.IsInhibited || granted == null || !granted.HasAny(grantedTags))
+                continue;
+
+            longest = Math.Max(longest, effect.RemainingTime);
+        }
+
+        return longest;
+    }
+
     private bool MeetsRequirements(EffectData data)
     {
         if (data.ApplicationRequiredTags != null && !_tags.HasAll(data.ApplicationRequiredTags))

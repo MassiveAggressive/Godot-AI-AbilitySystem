@@ -9,9 +9,9 @@ Sistem ayrıntıları ve kararları: `Docs/Systems/<Sistem>.md`. Burada yalnızc
 | `ModifierSource`, `ModifierEventData` | FGameplayEffectModCallbackData | Uygulandı (`Effect.md` Faz 0) |
 | `EffectData`, `Modifier`, `Magnitude` (Resource'lar), `EffectSpec`, `EffectHandle`, `ActiveEffect`, `ActiveEffectContainer` | UGameplayEffect, FGameplayModifierInfo, FGameplayEffectSpec, FActiveGameplayEffect… | Faz 1–3 uygulandı (`Effect.md`) |
 | `MagnitudeCalculation`, `ExecutionCalculation` (soyut Resource'lar), `CalculationContext`, `ExecutionOutput` | UGameplayModMagnitudeCalculation, UGameplayEffectExecutionCalculation | Uygulandı (`Effect.md` Faz 3) |
-| `Ability` (soyut Resource), `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityTask`, `WaitDelayTask`, `AbilityEventData` | UGameplayAbility, FGameplayAbilitySpecHandle, UAbilityTask, FGameplayEventData | Planlandı (`Ability.md`) |
+| `Ability` (soyut Resource), `AbilityHandle`, `AbilityContainer`, `ActivationFailure`, `AbilityTask`, `WaitDelayTask`, `AbilityEventData` | UGameplayAbility, FGameplayAbilitySpecHandle, UAbilityTask, FGameplayEventData | Faz 1 uygulandı (`AbilityEventData` Faz 2) (`Ability.md`) |
 | Cooldown | Cooldown GE | Ayrı sınıf yok: `Ability.Cooldown` bir `EffectData` (HasDuration + granted tag) |
-| `AbilitySystemComponent` | ASC | En son; alt sistemleri birleştirir, kendisi mantık taşımaz (`Ability.md`) |
+| `AbilitySystemComponent` | ASC | Uygulandı; alt sistemleri birleştirir, kendisi mantık taşımaz (`Ability.md`) |
 
 ## Bağımlılık Yönü
 ```
