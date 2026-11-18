@@ -29,6 +29,7 @@
 - Seviye ve eğri (`Systems/Level.md`): `Magnitude.LevelValues`/`LevelCurve`, `EffectSpec.Level`, `ActiveEffect.Level`, `CalculationContext.Level`, `Ability.Level` float, `AbilityContainer.SetLevel`; 26 yeni test, toplam 134 — [Claude, 2026-11-18]
 
 - Cue sistemi (`Systems/Cue.md`): `CueParameters`, `ICueNotify`, `CueEntry`, `CueLibrary` (proje ayarı `ability_system/cue_library_path`), `CueContainer`, `EffectData.Cues`, `AbilitySystemComponent.Cues`; 58 test — [Claude, 2026-11-18]
+- Cue editör denemesi (kullanıcı) tamam; örnek cue sahneleri ve Faz 3 testlerinin yeniden çalıştırılması kullanıcı kararıyla yapılmadı — [Claude, 2026-11-18]
 
 ## Yapılıyor
 - (boş)
@@ -43,6 +44,4 @@
 - `run/main_scene` şu an kullanıcının `Test/AbilityDemo` sahnesi; Fireball örneği (`Resource/Scenes/FireballDemo/FireballDemo.tscn`) F6 ile açılır, ana sahne yapılmadı.
 - Resource tabanlı attribute set fikri ertelendi (`Systems/Attribute.md` → İleride).
 - Editörde `[Tool]` olmayan `[GlobalClass]` alt sınıf yalnızca yer tutucu `Resource` olur; alt sınıf beklenen export alanları `Resource` tipinde tutulup çalışma anında cast edilir (`Magnitude.Calculation`, `EffectData.Executions`).
-- Faz 3 testleri, `Resource` tipine geçişten sonra yeniden çalıştırılmadı (yalnızca derleme).
-- Cue: `Resource/Cues/Cues.tres` henüz yok (dosya yokken cue'suz çalışılır). Editör denemesi (`CueEntry` tag menüsü, `Cues` grubu, proje ayarı) yapılmadı; testler headless.
 - RULES "döngüsel bağımlılık yasak" ile Faz 3'teki katman içi tip döngüsü (`EffectData` → hesaplama → `CalculationContext` → `EffectSpec`) kullanıcı kararıyla kabul edildi (`Effect.md` → Bağımlılıklar).
