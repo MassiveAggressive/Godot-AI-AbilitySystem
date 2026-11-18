@@ -32,7 +32,7 @@
 - (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Sıradaki iş kullanıcıyla belirlenecek (`IDEAS.md`)
+- [ ] Cue sistemi (`Systems/Cue.md` → Uygulama Sırası); kararlar kullanıcıdan alındı, plan onayı bekleniyor
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.

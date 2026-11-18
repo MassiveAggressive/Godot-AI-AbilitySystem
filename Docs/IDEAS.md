@@ -15,7 +15,6 @@
 - **Zengin effect context:** vuruş sonucu, kaynak nesne gibi ek bilgi taşıyan paket (şu an `Instigator`, `Causer`, ASC).
 - **Effect ile ability verme.**
 - **Özel uygulama şartı:** koddan yazılan uygulama kontrolü (Unreal `ApplicationRequirement`).
-- **Gameplay Cue'lar:** effect'e bağlı görsel/ses geri bildirimi (başlama, bitme, çalıştırma). Godot'ta sahne/efekt bağlama tasarımı gerekir.
 - **Periyodik effect'te yığın eklenince çalıştırma:** yığın eklendiği anda bir kez çalıştırma seçeneği (şu an çalıştırılmıyor; Unreal'da da böyle olduğu doğrulanmadı).
 
 ## Ability / ASC (`Systems/Ability.md` kapsamı dışında kalanlar)
@@ -25,6 +24,14 @@
 - Hedefleme (target actor / hedef verisi).
 - Kaynak/hedef tag şartları; başarısızlık tag'leri.
 - Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
+
+## Cue (`Systems/Cue.md` kapsamı dışında kalanlar)
+- **Ability cue'ları:** ability'den `ExecuteCue(tag)`, `AddCue(tag)` (ability bitince kalkar; ör. cast parlaması).
+- **Koddan cue ve ASC cue olayı:** `asc.Cues.Execute/Add/Remove`; aktör tüm cue'lara kendi kodunda tepki verir (Unreal `IGameplayCueInterface`).
+- **Fireball örneğine cue:** cast ve vuruş görselleri.
+- **Sahne havuzu:** sık açılan cue sahnelerini yeniden kullanma (Unreal cue actor recycling).
+- **Cue büyüklüğü:** parametrede effect'ten bir sayı (Unreal `RawMagnitude`/`NormalizedMagnitude`, `MagnitudeAttribute`).
+- **Yığın eklenince cue:** her yeni yığında Executed seçeneği (Unreal `Suppress Stacking Cues` karşılığı; şu an hiçbir şey olmaz).
 
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
