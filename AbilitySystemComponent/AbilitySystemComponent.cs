@@ -5,9 +5,9 @@ using Tags;
 namespace AbilitySystem;
 
 /// <summary>
-/// Gives its parent (the actor) attributes, tags, effects and abilities. Add it as a child of the actor, pick the
-/// attribute sets, starting effects (e.g. an instant effect setting initial values) and starting abilities in the
-/// inspector. Everything is created when the node first enters the tree, so it is ready in every _Ready; code may
+/// Gives its parent (the actor) attributes, tags, effects, abilities and effect cues. Add it as a child of the actor,
+/// pick the attribute sets, starting effects (e.g. an instant effect setting initial values) and starting abilities in
+/// the inspector. Everything is created when the node first enters the tree, so it is ready in every _Ready; code may
 /// add more sets and abilities from there:
 /// <code>
 /// var asc = AbilitySystemComponent.Find(body);
@@ -80,6 +80,9 @@ public partial class AbilitySystemComponent : Node
 
     public AbilityContainer Abilities { get; private set; }
 
+    /// <summary>Shows the effects' cues on the actor with <see cref="CueLibrary.Default"/>.</summary>
+    public CueContainer Cues { get; private set; }
+
     /// <summary><paramref name="node"/> itself or its first direct child that is an ability system component; null if none.</summary>
     public static AbilitySystemComponent Find(Node node)
     {
@@ -111,6 +114,7 @@ public partial class AbilitySystemComponent : Node
         Tags = new TagCountContainer();
         Effects = new ActiveEffectContainer(Attributes, Tags);
         Abilities = new AbilityContainer(Attributes, Tags, Effects, Actor, this);
+        Cues = new CueContainer(Actor, Effects);
 
         foreach (string setName in _attributeSets)
         {
@@ -171,6 +175,8 @@ public partial class AbilitySystemComponent : Node
         if (what != NotificationPredelete || Effects == null)
             return;
 
+        // First, so no cue code runs on a node being freed; the cue scenes on the actor go with it.
+        Cues.Detach();
         Abilities?.CancelAll();
         Effects.RemoveAll();
     }

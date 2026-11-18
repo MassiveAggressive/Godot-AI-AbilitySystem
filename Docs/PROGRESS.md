@@ -28,11 +28,13 @@
 
 - Seviye ve eğri (`Systems/Level.md`): `Magnitude.LevelValues`/`LevelCurve`, `EffectSpec.Level`, `ActiveEffect.Level`, `CalculationContext.Level`, `Ability.Level` float, `AbilityContainer.SetLevel`; 26 yeni test, toplam 134 — [Claude, 2026-11-18]
 
+- Cue sistemi (`Systems/Cue.md`): `CueParameters`, `ICueNotify`, `CueEntry`, `CueLibrary` (proje ayarı `ability_system/cue_library_path`), `CueContainer`, `EffectData.Cues`, `AbilitySystemComponent.Cues`; 58 test — [Claude, 2026-11-18]
+
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Cue sistemi (`Systems/Cue.md` → Uygulama Sırası); kararlar kullanıcıdan alındı, plan onayı bekleniyor
+- (boş)
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.
@@ -42,4 +44,5 @@
 - Resource tabanlı attribute set fikri ertelendi (`Systems/Attribute.md` → İleride).
 - Editörde `[Tool]` olmayan `[GlobalClass]` alt sınıf yalnızca yer tutucu `Resource` olur; alt sınıf beklenen export alanları `Resource` tipinde tutulup çalışma anında cast edilir (`Magnitude.Calculation`, `EffectData.Executions`).
 - Faz 3 testleri, `Resource` tipine geçişten sonra yeniden çalıştırılmadı (yalnızca derleme).
+- Cue: `Resource/Cues/Cues.tres` henüz yok (dosya yokken cue'suz çalışılır). Editör denemesi (`CueEntry` tag menüsü, `Cues` grubu, proje ayarı) yapılmadı; testler headless.
 - RULES "döngüsel bağımlılık yasak" ile Faz 3'teki katman içi tip döngüsü (`EffectData` → hesaplama → `CalculationContext` → `EffectSpec`) kullanıcı kararıyla kabul edildi (`Effect.md` → Bağımlılıklar).

@@ -1,6 +1,6 @@
 # Cue Sistemi — Plan
 
-> Durum: **plan**, kararlar kullanıcıdan alındı (2026-11-18); onay bekliyor, uygulama başlamadı.
+> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless.
 > Karşılığı: Unreal `GameplayCue` (`UGameplayCueManager`, `FGameplayCueParameters`, `AGameplayCueNotify_Actor`/`UGameplayCueNotify_Static`, `FGameplayEffectCue`). `Gameplay` ön eki yok.
 
 ## Amaç
@@ -33,7 +33,7 @@
 - Instant: her uygulamada `Executed`. Süreli/sonsuz: eklenince `Added`, kalkınca `Removed`; periyotluysa ayrıca her periyotta `Executed`.
 
 ### CueParameters
-- `Tag Tag` (effect'teki cue tag'i), `Node Target` (cue'yu alan aktör), `Node Instigator`, `Node Causer`, `float Level`, `int StackCount`, `EffectSpec Spec`, `ActiveEffect Effect` (Instant'ta null). Düğümler null veya silinmiş olabilir.
+- `Tag Tag` (effect'teki cue tag'i), `Node Target` (cue'yu alan aktör), `Node Instigator`, `Node Causer`, `float Level`, `int StackCount`, `EffectSpec Spec`, `ActiveEffect Effect` (Instant'ta null). Düğümler null veya silinmiş olabilir. `Instigator`, `Causer`, `Level` spec'ten okunur.
 
 ### ICueNotify
 ```csharp
@@ -50,7 +50,7 @@ Kök düğümün script'i uygular: `public partial class BurnFlames : GpuParticl
 
 ### CueEntry ve CueLibrary
 - `CueEntry`: `TagName` (tag menüsü, `TagContainer.BuildTagOptions`), `PackedScene Scene`, `float ExecutedLifetime = 2` (Executed sahnesinin ömrü, sn; 0 = sahne kendini siler), `bool AttachExecuted = false` (Executed sahnesi aktörün çocuğu olsun mu; varsayılan: aktörün parent'ına, aktörün konumunda).
-- `CueLibrary`: `CueEntry[] Entries`. Statik `Default`: proje ayarındaki dosya ilk kullanımda bir kez yüklenir; dosya yoksa cue'suz çalışılır (hata yok). `internal CueEntry Find(Tag tag)`: en derin eşleşen giriş (`TagRegistry.Matches`), sonuç tag başına önbellekte (yok da saklanır).
+- `CueLibrary`: `CueEntry[] Entries`. Statik `Default`: proje ayarındaki dosya (`GetLibraryPath()`) ilk kullanımda bir kez yüklenir; dosya yoksa boş kütüphane, cue'suz çalışılır (hata yok); dosya `CueLibrary` değilse hata, yine boş. `internal CueEntry Find(Tag tag)`: en derin eşleşen giriş (`TagRegistry.Matches`), sonuç tag başına önbellekte (yok da saklanır). Sahnesi boş giriş atlanır (parent'a düşülür).
 - `AbilitySystemPlugin` proje ayarını kaydeder (Tags'in `tags/tag_list_path`'i gibi).
 
 ### CueContainer
@@ -59,7 +59,9 @@ Kök düğümün script'i uygular: `public partial class BurnFlames : GpuParticl
 - **Executed:** sahne açılır; `AttachExecuted` ise aktörün çocuğu, değilse aktörün parent'ının çocuğu ve aktörün global konumunda (kök ve aktör ikisi de `Node2D` ya da `Node3D` ise). `OnCueExecuted`. `ExecutedLifetime > 0` ise o kadar sonra silinir (`TimerManager`, oyun duraklayınca durur).
 - **Added:** tag'in sayacı 0 → 1 ise sahne aktörün çocuğu olarak açılır, `OnCueAdded`; değilse yalnızca sayaç artar.
 - **Removed:** sayaç 1 → 0 ise `OnCueRemoved`; `false` dönerse (veya arayüz yoksa) `QueueFree`.
-- `Detach()`: aboneliği bırakır ve sahneleri unutur, kanca çağırmaz. ASC silinirken (`NotificationPredelete`) `Effects.RemoveAll()`'dan önce çağrılır: aktörün çocuğu olan sahneler aktörle birlikte silinir, silinmekte olan düğümde kanca çalışmaz.
+- `Detach()`: aboneliği bırakır ve sahneleri unutur, kanca çağırmaz. ASC silinirken (`NotificationPredelete`) en başta (`Abilities.CancelAll()` ve `Effects.RemoveAll()`'dan önce) çağrılır: aktörün çocuğu olan sahneler aktörle birlikte silinir, silinmekte olan düğümde kanca çalışmaz.
+- **Ertelenmiş ekleme (uygulamada eklendi):** Godot, çocuklarını kurmakta olan düğüme `AddChild`'i reddeder (ör. ASC `_EnterTree`'de başlangıç effect'lerini uygularken aktör). Eklenecek parent ağaçta ve henüz hazır değilse (`!IsNodeReady()`) sahne kare sonunda eklenir (`CallDeferred`), kanca o zaman çağrılır. O arada `Removed` gelirse sahne hiç eklenmeden silinir, kanca çağrılmaz.
+- **Hangi effect'in cue'su açık:** sayaç tag başına; ayrıca effect başına kaç cue tag'inin eklendiği tutulur (`GrantedTags`'teki gibi önce sayılır, sonra eklenir). Böylece kancadan effect'i kaldırmak, `InhibitionChanged`'in `EffectAdded`'den önce gelmesi veya `EffectAdded` gelmeden `EffectRemoved` gelmesi sayacı bozmaz.
 
 ### AbilitySystemComponent
 - `Cues` (`CueContainer`), ilk `_EnterTree`'de diğer container'larla kurulur.
@@ -88,6 +90,8 @@ Effect katmanı cue katmanını bilmez (`EffectData.Cues` yalnızca tag verisi).
 - Parent tag'e düşme; kütüphanede olmayan tag → hiçbir şey; kütüphane dosyası yok → hatasız.
 - ASC: kurulum, aktör silinince kanca çağrılmadan temizlik; Fireball örneği (cue'suz) hatasız çalışır.
 - Cue'suz effect'lerde 0 allocation.
+- Uygulamada eklenenler: başlangıç effect'inin süren sahnesi kare sonunda eklenir (Executed sahnesi hazır parent'a hemen); eklenmeden kaldırılırsa hiç gösterilmez; `Default` proje ayarındaki dosyadan yüklenir; `Detach` sonrası kanca yok.
+- Sonuç: 58 test geçti (test sahnesi `override.cfg` ile geçici tag listesi ve kütüphane yolu kullandı, sonra silindi). Fireball örneği ve ana sahne, kütüphane dosyası yokken hatasız çalıştı.
 
 ## Uygulama Sırası
 1. `CueParameters`, `ICueNotify`. 2. `CueEntry`, `CueLibrary`, proje ayarı (`AbilitySystemPlugin`). 3. `EffectData.Cues`. 4. `CueContainer`. 5. ASC bağlantısı. 6. Testler. 7. Doküman: `ARCHITECTURE.md`, `Effect.md`, `IDEAS.md`, bu dosyanın durumu.

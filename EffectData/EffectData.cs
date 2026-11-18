@@ -10,7 +10,7 @@ namespace AbilitySystem;
 /// and grant tags while active. With a period, the modifiers are instead applied to the base value every period
 /// (damage over time, regeneration). Duration and period are <see cref="Magnitude"/>s, so they can be constant,
 /// set in code or based on an attribute. Instant and periodic effects may also run code (<see cref="Executions"/>).
-/// Empty tag fields may be left unset.
+/// Visuals and sounds are named by <see cref="Cues"/>. Empty tag fields may be left unset.
 /// Shared by everyone who loads the resource, so it is not changed at run time.
 /// </summary>
 [Tool]
@@ -147,7 +147,17 @@ public partial class EffectData : Resource
     [Export]
     public TagContainer ImmunityTags { get; set; }
 
+    /// <summary>
+    /// Cue tags (e.g. "Cue.Fire.Burn") whose scenes the <see cref="CueLibrary"/> shows on the target: once per
+    /// execution of an instant or periodic effect, and for as long as a duration or infinite effect is active.
+    /// </summary>
+    [ExportGroup("Cues")]
+    [Export]
+    public TagContainer Cues { get; set; }
+
     public bool IsInstant => _durationType == EffectDurationType.Instant;
+
+    internal bool HasCues => HasTags(Cues);
 
     /// <summary>True when applications stack (never for instant effects).</summary>
     public bool Stacks => !IsInstant && _stackingType != EffectStackingType.None;

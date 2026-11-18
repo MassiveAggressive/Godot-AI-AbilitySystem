@@ -32,6 +32,7 @@
 - **Sahne havuzu:** sık açılan cue sahnelerini yeniden kullanma (Unreal cue actor recycling).
 - **Cue büyüklüğü:** parametrede effect'ten bir sayı (Unreal `RawMagnitude`/`NormalizedMagnitude`, `MagnitudeAttribute`).
 - **Yığın eklenince cue:** her yeni yığında Executed seçeneği (Unreal `Suppress Stacking Cues` karşılığı; şu an hiçbir şey olmaz).
+- **Cue konumu:** vuruş noktası ve normali parametrede (Unreal `Location`/`Normal`); şu an Executed sahnesi aktörün konumunda açılır.
 
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
