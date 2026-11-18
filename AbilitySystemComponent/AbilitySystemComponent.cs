@@ -17,7 +17,7 @@ namespace AbilitySystem;
 /// </summary>
 [Tool]
 [GlobalClass]
-public partial class AbilitySystemComponent : Node
+public partial class AbilitySystemComponent : Node, IAbilitySystem
 {
     private string[] _attributeSets = Array.Empty<string>();
     private EffectData[] _startingEffects = Array.Empty<EffectData>();

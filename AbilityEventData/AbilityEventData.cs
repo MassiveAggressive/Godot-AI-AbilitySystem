@@ -24,12 +24,16 @@ public readonly struct AbilityEventData
     /// <summary>Anything else; cast to what the sender put in.</summary>
     public readonly object Payload;
 
-    public AbilityEventData(Tag tag, Node instigator = null, Node target = null, float magnitude = 0f, object payload = null)
+    /// <summary>Several targets or points (e.g. chosen by AI); may be null. Owned by the sender: copy it to keep it.</summary>
+    public readonly TargetData Targets;
+
+    public AbilityEventData(Tag tag, Node instigator = null, Node target = null, float magnitude = 0f, object payload = null, TargetData targets = null)
     {
         Tag = tag;
         Instigator = instigator;
         Target = target;
         Magnitude = magnitude;
         Payload = payload;
+        Targets = targets;
     }
 }

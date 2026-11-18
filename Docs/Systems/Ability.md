@@ -36,7 +36,7 @@
 | K6 | Örnek sahne | Şimdilik yok; Faz 3 atlandı. Ability'ler headless testlerle doğrulanır. **Kullanıcı** |
 | — | Bağımlılık | Ability, `AbilityContainer`'ı ve ASC'yi bilmez; ASC ona `Node` olarak verilir (`ModifierSource.InstigatorAbilitySystem` gibi). Task'lar Ability'yi bilmez. Döngü yok. |
 | — | Örnekleme | Yalnızca aktör başına kopya; Ability aynı anda bir kez aktif olabilir. Örneksiz ve çalıştırma başına kopya ileride (IDEAS). |
-| — | Hedefleme, ağ | Kapsam dışı. Hedefi kullanıcı kodu bulur (ör. merminin çarptığı düğüm). |
+| — | Hedefleme, ağ | Ağ kapsam dışı. Hedefleme ayrı plan (`Targeting.md`): `TargetData`, `TargetQuery2D`, `Ability.ApplyEffectToTargets`, `AbilityEventData.Targets`, `TryActivate(handle, in AbilityEventData)`. Hedefi kullanıcı kodunun bulması da geçerli (ör. merminin çarptığı düğüm). |
 
 ## Fazlar
 | Faz | İçerik |

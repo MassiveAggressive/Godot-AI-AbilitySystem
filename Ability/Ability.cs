@@ -237,6 +237,38 @@ public abstract partial class Ability : Resource
         return EffectHandle.None;
     }
 
+    /// <summary>
+    /// Applies <paramref name="data"/> from this actor to every entry of <paramref name="targets"/> whose actor has an
+    /// ability system (one spec shared by all). Returns how many accepted it (application tags or immunity may refuse).
+    /// </summary>
+    protected int ApplyEffectToTargets(EffectData data, TargetData targets, Node causer = null)
+    {
+        if (data == null || targets == null)
+            return 0;
+
+        EffectSpec spec = null;
+        int applied = 0;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            ActiveEffectContainer effects = IAbilitySystem.Find(targets[i].Actor)?.Effects;
+            if (effects == null)
+                continue;
+
+            spec ??= MakeEffectSpec(data, causer);
+            if (effects.Apply(spec).IsValid)
+                applied++;
+        }
+
+        return applied;
+    }
+
+    /// <summary>Applies <paramref name="data"/> from this actor to <paramref name="target"/>; None if it has no ability system or refused it.</summary>
+    protected EffectHandle ApplyEffectToTarget(EffectData data, Node target, Node causer = null)
+    {
+        ActiveEffectContainer effects = IAbilitySystem.Find(target)?.Effects;
+        return data == null || effects == null ? EffectHandle.None : effects.Apply(MakeEffectSpec(data, causer));
+    }
+
     /// <summary>Runs <paramref name="completed"/> after <paramref name="seconds"/>, unless the ability ends first.</summary>
     protected WaitDelayTask WaitDelay(float seconds, Action completed)
     {

@@ -185,6 +185,22 @@ public sealed class AbilityContainer
         return ability != null && Activate(ability, false, default);
     }
 
+    /// <summary>
+    /// Activates as if triggered by <paramref name="data"/>: the ability reads it in <c>ActivateFromEvent</c>, e.g. the
+    /// targets an AI picked (<see cref="AbilityEventData.Targets"/>). No trigger tag is needed and the event is not
+    /// sent anywhere else; the usual conditions (tags, cooldown, cost) apply.
+    /// <code>
+    /// _targets.Clear();
+    /// _targets.Add(enemy);
+    /// abilities.TryActivate(attack, new AbilityEventData(attackTag, Actor, enemy, targets: _targets));
+    /// </code>
+    /// </summary>
+    public bool TryActivate(AbilityHandle handle, in AbilityEventData data)
+    {
+        Ability ability = Get(handle);
+        return ability != null && Activate(ability, true, data);
+    }
+
     /// <summary>Activates the actor's copy of <paramref name="ability"/> (a definition or the copy itself).</summary>
     public bool TryActivate(Ability ability)
     {

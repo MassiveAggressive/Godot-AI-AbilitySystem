@@ -32,11 +32,13 @@
 - Cue editör denemesi (kullanıcı) tamam; örnek cue sahneleri ve Faz 3 testlerinin yeniden çalıştırılması kullanıcı kararıyla yapılmadı — [Claude, 2026-11-18]
 - Hedefleme planı taslağı (`Systems/Targeting.md`, Faz 1–3, açık kararlar K1–K7) — [Claude, 2026-11-18]
 
+- Hedefleme Faz 1–2 (`Systems/Targeting.md`, K1–K7 kullanıcı onaylı): `IAbilitySystem`, `TargetHit`, `TargetData`, `TargetQuery2D`, `Ability.ApplyEffectToTargets`/`ApplyEffectToTarget`, `AbilityEventData.Targets`, `TryActivate(handle, in AbilityEventData)`; yalnızca derleme, testler kullanıcıda — [Claude, 2026-11-18]
+
 ## Yapılıyor
 - (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Hedefleme (`Systems/Targeting.md`); K1–K7 kararları ve plan onayı kullanıcıdan bekleniyor
+- [ ] Hedefleme Faz 3 (oyuncunun nişan alması) planı
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.

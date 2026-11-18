@@ -1,6 +1,12 @@
 # Hedefleme Sistemi — Plan
 
-> Durum: **taslak** (2026-11-18); açık kararlar K1–K7 kullanıcıdan bekleniyor, uygulama başlamadı.
+> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (yalnızca derleme; testleri kullanıcı yapar). Faz 3 sonra ayrıca planlanacak.
+>
+> Uygulamada netleşenler:
+> - `IAbilitySystem.FindInParents(Node)`: düğüm veya ASC'si olan en yakın atası (K6). `Find` ASC'si henüz kurulmamış (ağaca girmemiş) bileşeni de döner; `Effects` o zaman null, yardımcılar bunu atlar.
+> - `TargetData` ekleri: `Add(in TargetHit)`, `CopyFrom(TargetData)` (olayla gelen veriyi saklamak için).
+> - `TargetQuery2D`: sorgu başına en çok 64 collider (sabit `MaxColliders`); kendi filtresinden aynı sorguyu yeniden çalıştırmak hata verir (paylaşılan tampon). `RequireAbilitySystem` kapalıyken ASC'siz hedefte `RequiredTags` tutmaz, `BlockedTags` engellemez. Ray'de kaynak `CollisionObject2D` ise RID'i hariç tutulur (ışın ona takılmasın); Godot ışını içinden başladığı şekle zaten çarpmaz.
+> - `Ability.ApplyEffectToTargets` aynı aktörü iki kez içeren veride iki kez uygular (sorgu zaten tekrar eklemez).
 > Karşılığı: Unreal `FGameplayAbilityTargetData(Handle)` (`_SingleTargetHit`, `_ActorArray`), `UAbilityTask_WaitTargetData`, `AGameplayAbilityTargetActor_*`, `AGameplayAbilityWorldReticle`, `IAbilitySystemInterface`; sorgu kısmı UE5 Targeting System'den (seçim → filtre → sıralama) sadeleştirilmiş. `Gameplay` ön eki yok.
 
 ## Amaç
@@ -9,7 +15,7 @@
 - AI'nın seçtiği hedefle ability aktifleştirmek; oyuncunun nişan alıp onaylaması (zemin hedefi).
 - Şu anki yol (hedefi kullanıcı kodu bulur, ör. Fireball mermisi `AbilitySystemComponent.Find` ile) aynen çalışmaya devam eder; hedefleme isteğe bağlıdır.
 
-## Açık Kararlar
+## Kararlar (kullanıcı: hepsi "Öneri" sütunundaki gibi)
 | # | Konu | Seçenekler | Öneri |
 |---|---|---|---|
 | K1 | Kapsam | Faz 1: hedef verisi, hedeflere effect uygulama, hedefle aktifleştirme. Faz 2: şekil sorgusu (alan, koni, ışın) ve filtreler. Faz 3: oyuncunun nişan alıp onayladığı hedefleme (nişangâh sahnesi, onay/iptal). | Faz 1 + 2 şimdi; Faz 3'ün planı Faz 2'den sonra ayrıca (giriş kararları ona bağlı). |

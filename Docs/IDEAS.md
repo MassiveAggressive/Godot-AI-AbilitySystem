@@ -34,6 +34,14 @@
 - **Yığın eklenince cue:** her yeni yığında Executed seçeneği (Unreal `Suppress Stacking Cues` karşılığı; şu an hiçbir şey olmaz).
 - **Cue konumu:** vuruş noktası ve normali parametrede (Unreal `Location`/`Normal`); şu an Executed sahnesi aktörün konumunda açılır.
 
+## Hedefleme (`Systems/Targeting.md` kapsamı dışında kalanlar)
+- **3D sorgu:** `TargetQuery3D` (küre, koni, kutu, ışın); veri (`TargetData`) zaten 3D noktaları taşıyor.
+- **Takım ilişkisi filtresi:** "kaynağın düşmanı/dostu" (Unreal team interface); şu an yalnızca hedefin tag'leri.
+- **Görüş hattı:** hedefe kaynaktan ışın atıp engel varsa eleme.
+- **Özel filtre/sıralama Resource'ları:** UE5 Targeting System görev zinciri gibi; şu an koddan tek `Func<Node, bool>`.
+- **Kaynak konum bilgisi:** hedef verisinde başlangıç noktası/yönü (Unreal `LocationInfo`, geri itme için).
+- **Asenkron sorgu** ve ayarlanabilir collider sınırı (şu an sabit 64).
+
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
 - `TagCountContainer` için tag'e özel dinleyici.
