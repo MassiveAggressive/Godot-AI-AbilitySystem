@@ -1,6 +1,6 @@
 # Hedefleme Sistemi — Plan
 
-> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (yalnızca derleme; testleri kullanıcı yapar). Faz 3 sonra ayrıca planlanacak.
+> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (70 test headless geçti). Faz 3 sonra ayrıca planlanacak.
 >
 > Uygulamada netleşenler:
 > - `IAbilitySystem.FindInParents(Node)`: düğüm veya ASC'si olan en yakın atası (K6). `Find` ASC'si henüz kurulmamış (ağaca girmemiş) bileşeni de döner; `Effects` o zaman null, yardımcılar bunu atlar.
