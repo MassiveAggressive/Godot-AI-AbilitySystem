@@ -16,6 +16,7 @@
 - **Effect ile ability verme.**
 - **Özel uygulama şartı:** koddan yazılan uygulama kontrolü (Unreal `ApplicationRequirement`).
 - **Periyodik effect'te yığın eklenince çalıştırma:** yığın eklendiği anda bir kez çalıştırma seçeneği (şu an çalıştırılmıyor; Unreal'da da böyle olduğu doğrulanmadı).
+- **Hazır spec'i hedeflere uygulama:** `ApplyEffectToTargets` yalnızca `EffectData` alıyor; SetByCaller dolu bir spec'i her hedefe kendi vuruş noktasıyla uygulamanın yolu yok (`CopyWithHit` internal). Element Arena'daki Rüzgâr bunun için elle döngü yazıyor.
 
 ## Ability / ASC (`Systems/Ability.md` kapsamı dışında kalanlar)
 - Örneksiz ve çalıştırma başına örnekleme (şu an yalnızca aktör başına kopya).
@@ -23,6 +24,8 @@
 - `await` ile task; animasyon task'ı (`PlayAnimationAndWait`); animasyondan olay gönderme.
 - Kaynak/hedef tag şartları; başarısızlık tag'leri.
 - Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
+- **`IAbilitySystem` üzerinden olay gönderme:** başka bir aktöre `SendEvent` için `AbilitySystemComponent`'e cast gerekiyor (Element Arena'da geri itme).
+- **UI için cooldown/maliyet bilgisi:** toplam cooldown süresi veya oranı ve maliyet miktarı; şu an UI `Cooldown.Duration.Value` okuyor, yalnızca sabit süreler için doğru.
 
 ## Cue (`Systems/Cue.md` kapsamı dışında kalanlar)
 - **ASC cue olayı:** aktör tüm cue'lara kendi kodunda tepki verir (Unreal `IGameplayCueInterface`); koddan cue API'si `Cue.md` Faz 2'de.
@@ -30,6 +33,8 @@
 - **Sahne havuzu:** sık açılan cue sahnelerini yeniden kullanma (Unreal cue actor recycling).
 - **Cue büyüklüğü:** parametrede effect'ten bir sayı (Unreal `RawMagnitude`/`NormalizedMagnitude`, `MagnitudeAttribute`).
 - **Yığın eklenince cue:** her yeni yığında Executed seçeneği (Unreal `Suppress Stacking Cues` karşılığı; şu an hiçbir şey olmaz).
+- **Periyodik effect'te yalnızca kalıcı cue:** süreli+periyodik effect'in cue tag'i her tikte ayrıca kısa ömürlü bir sahne açıyor; "yalnızca kalıcı" seçeneği yok (Element Arena'da `CueVisual.IgnoreExecuted` ile çözüldü).
+- **ASC başına cue kütüphanesi:** ASC her zaman `CueLibrary.Default`'u kullanıyor; inspector'dan başka kütüphane seçilemiyor.
 
 ## Hedefleme (`Systems/Targeting.md` kapsamı dışında kalanlar)
 - **3D sorgu:** `TargetQuery3D` (küre, koni, kutu, ışın); veri (`TargetData`) zaten 3D noktaları taşıyor.
