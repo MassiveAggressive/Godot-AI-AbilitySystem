@@ -295,6 +295,15 @@ public sealed class AbilityContainer
         }
     }
 
+    /// <summary>
+    /// Generic confirm (e.g. placing an aimed spell): passed to the tasks of every active ability. True if a task took
+    /// it. <see cref="AbilitySystemComponent.ConfirmAction"/> calls this for the player; UI may call it too.
+    /// </summary>
+    public bool InputConfirm() => DeliverConfirm(true);
+
+    /// <summary>Generic cancel (e.g. dropping an aimed spell); see <see cref="InputConfirm"/>.</summary>
+    public bool InputCancel() => DeliverConfirm(false);
+
     public bool Cancel(AbilityHandle handle)
     {
         Ability ability = Get(handle);
@@ -479,6 +488,19 @@ public sealed class AbilityContainer
         }
 
         return cancelled;
+    }
+
+    // Every active ability gets it (not only the first taker), so two aiming abilities both close.
+    private bool DeliverConfirm(bool confirm)
+    {
+        bool taken = false;
+        for (int i = 0; i < _abilities.Count; i++)
+        {
+            if (_abilities[i].ReceiveConfirm(confirm))
+                taken = true;
+        }
+
+        return taken;
     }
 
     private void OnAbilityEnded(Ability ability, bool cancelled) => AbilityEnded?.Invoke(ability, cancelled);

@@ -30,15 +30,15 @@
 
 - Cue sistemi (`Systems/Cue.md`): `CueParameters`, `ICueNotify`, `CueEntry`, `CueLibrary` (proje ayarı `ability_system/cue_library_path`), `CueContainer`, `EffectData.Cues`, `AbilitySystemComponent.Cues`; 58 test — [Claude, 2026-11-18]
 - Cue editör denemesi (kullanıcı) tamam; örnek cue sahneleri ve Faz 3 testlerinin yeniden çalıştırılması kullanıcı kararıyla yapılmadı — [Claude, 2026-11-18]
-- Hedefleme planı taslağı (`Systems/Targeting.md`, Faz 1–3, açık kararlar K1–K7) — [Claude, 2026-11-18]
 
 - Hedefleme Faz 1–2 (`Systems/Targeting.md`, K1–K7 kullanıcı onaylı): `IAbilitySystem`, `TargetHit`, `TargetData`, `TargetQuery2D`, `Ability.ApplyEffectToTargets`/`ApplyEffectToTarget`, `AbilityEventData.Targets`, `TryActivate(handle, in AbilityEventData)`; 70 test headless geçti (Sonnet) — [Claude, 2026-11-18]
+- Hedefleme Faz 3 planı taslağı (`Systems/Targeting.md`, K8–K15, onay bekliyor) — [Claude, 2026-11-19]
+- Hedefleme Faz 3 (K8–K14 öneriler gibi, örnek sahne yok): `WaitTargetDataTask`, `TargetConfirmation`, `TargetReticle2D`, `Ability.WaitTargetData`, `AbilityTask.OnConfirm`/`OnCancel`, `AbilityContainer.InputConfirm`/`InputCancel`, ASC `ConfirmAction`/`CancelAction`; 111 test headless geçti (Sonnet) — [Claude, 2026-11-19]
 
 ## Yapılıyor
-- (boş)
 
 ## Yapılacak (sırayla)
-- [ ] Hedefleme Faz 3 (oyuncunun nişan alması) planı
+- (boş)
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.

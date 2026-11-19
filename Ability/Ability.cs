@@ -304,6 +304,20 @@ public abstract partial class Ability : Resource
         return RunTask(task);
     }
 
+    /// <summary>
+    /// Lets the player aim from the actor (a <see cref="Node2D"/>) with <paramref name="reticle"/> and fills
+    /// <paramref name="into"/> on confirm: the aimed point, or with <paramref name="query"/> the targets it finds
+    /// there. For other settings (e.g. <see cref="WaitTargetDataTask.QueryFromSource"/>) make the task yourself.
+    /// </summary>
+    protected WaitTargetDataTask WaitTargetData(PackedScene reticle, float range, TargetData into, Action<TargetData> confirmed,
+        Action cancelled = null, TargetQuery2D query = null, TargetConfirmation confirmation = TargetConfirmation.Confirm)
+    {
+        var task = new WaitTargetDataTask(Actor as Node2D, reticle, range, into, query, confirmation) { InputHeld = IsInputPressed };
+        task.Confirmed += confirmed;
+        task.Cancelled += cancelled;
+        return RunTask(task);
+    }
+
     /// <summary>Starts <paramref name="task"/>; it ends when the ability ends. Only while active.</summary>
     protected T RunTask<T>(T task) where T : AbilityTask
     {
@@ -489,6 +503,31 @@ public abstract partial class Ability : Resource
         {
             _deliveryDepth--;
         }
+    }
+
+    /// <summary>Passes a confirm or cancel to the running tasks; true if one of them took it.</summary>
+    internal bool ReceiveConfirm(bool confirm)
+    {
+        if (!IsActive || _tasks == null)
+            return false;
+
+        bool taken = false;
+        _deliveryDepth++;
+        try
+        {
+            int count = _tasks.Count;
+            for (int i = 0; i < count && i < _tasks.Count; i++)
+            {
+                if (_tasks[i].IsRunning && _tasks[i].DeliverConfirm(confirm))
+                    taken = true;
+            }
+        }
+        finally
+        {
+            _deliveryDepth--;
+        }
+
+        return taken;
     }
 
     private static bool HasTags(TagContainer tags) => tags != null && tags.Count > 0;

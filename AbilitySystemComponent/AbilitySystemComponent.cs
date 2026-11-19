@@ -67,6 +67,17 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         }
     }
 
+    /// <summary>
+    /// With <see cref="ProcessInput"/>: pressing it calls <see cref="AbilityContainer.InputConfirm"/> (e.g. placing an
+    /// aimed spell). Taken, the input reaches no ability; otherwise it works as usual (a left click still attacks).
+    /// </summary>
+    [Export(PropertyHint.InputName)]
+    public StringName ConfirmAction { get; set; }
+
+    /// <summary>With <see cref="ProcessInput"/>: pressing it calls <see cref="AbilityContainer.InputCancel"/>; see <see cref="ConfirmAction"/>.</summary>
+    [Export(PropertyHint.InputName)]
+    public StringName CancelAction { get; set; }
+
     /// <summary>The parent node; set when the node first enters the tree.</summary>
     public Node Actor { get; private set; }
 
@@ -146,6 +157,13 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         if (!_processInput || Abilities == null)
             return;
 
+        // Before the abilities' actions: while aiming, the confirm click must not also start an attack bound to it.
+        if ((IsPressed(@event, ConfirmAction) && Abilities.InputConfirm()) || (IsPressed(@event, CancelAction) && Abilities.InputCancel()))
+        {
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         bool handled = false;
         for (int i = 0; i < Abilities.Count; i++)
         {
@@ -180,6 +198,8 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         Abilities?.CancelAll();
         Effects.RemoveAll();
     }
+
+    private static bool IsPressed(InputEvent @event, StringName action) => action != null && !action.IsEmpty && @event.IsActionPressed(action);
 
     /// <summary>Several abilities may share an action; it is passed on once.</summary>
     private bool IsBoundEarlier(int index, StringName action)

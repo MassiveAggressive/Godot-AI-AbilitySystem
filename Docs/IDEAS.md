@@ -21,7 +21,6 @@
 - Örneksiz ve çalıştırma başına örnekleme (şu an yalnızca aktör başına kopya).
 - Aktifken yeniden tetikleme (`bRetriggerInstancedAbility`).
 - `await` ile task; animasyon task'ı (`PlayAnimationAndWait`); animasyondan olay gönderme.
-- Hedefleme (target actor / hedef verisi).
 - Kaynak/hedef tag şartları; başarısızlık tag'leri.
 - Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
 
@@ -41,6 +40,9 @@
 - **Özel filtre/sıralama Resource'ları:** UE5 Targeting System görev zinciri gibi; şu an koddan tek `Func<Node, bool>`.
 - **Kaynak konum bilgisi:** hedef verisinde başlangıç noktası/yönü (Unreal `LocationInfo`, geri itme için).
 - **Asenkron sorgu** ve ayarlanabilir collider sınırı (şu an sabit 64).
+- **Çoklu onay:** arka arkaya birden çok nokta seçme (Unreal `CustomMulti`, ör. 3 tuzak); şu an tek onay.
+- **Nişan sırasında hedef vurgulama:** nişangâhın altındaki hedefleri her kare sorgulayıp gösterme; şu an alt sınıf kendisi yapar.
+- **Hazır gamepad nişanı** ve **3D nişangâh** (`TargetReticle3D`).
 
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
