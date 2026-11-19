@@ -5,7 +5,7 @@ namespace AbilitySystem;
 
 /// <summary>
 /// What an actor's ability system offers to code that only has the actor's node (targeting, hits): its attributes,
-/// tags and effects. <see cref="AbilitySystemComponent"/> implements it; lower layers use this instead of the
+/// tags, effects, cues and team. <see cref="AbilitySystemComponent"/> implements it; lower layers use this instead of the
 /// component, which would make them depend on everything the component holds.
 /// </summary>
 public interface IAbilitySystem
@@ -18,6 +18,9 @@ public interface IAbilitySystem
     TagCountContainer Tags { get; }
 
     ActiveEffectContainer Effects { get; }
+
+    /// <summary>The actor's cues, e.g. to show a hit spark on a target without an effect.</summary>
+    CueContainer Cues { get; }
 
     /// <summary>The actor's team (e.g. "Team.Player"); <see cref="Tag.None"/> for none. See <see cref="GetAttitude(IAbilitySystem, IAbilitySystem)"/>.</summary>
     Tag Team { get; }

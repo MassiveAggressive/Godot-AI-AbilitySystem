@@ -40,10 +40,18 @@ public partial class CueEntry : Resource
 
     /// <summary>
     /// A scene opened by an execution becomes the actor's child and moves with it. Off, it is placed under the
-    /// actor's parent at the actor's position, so it stays where the hit happened.
+    /// actor's parent, so it stays where the hit happened. Either way it opens at the cue's location (the hit point)
+    /// when it has one, otherwise at the actor.
     /// </summary>
     [Export]
     public bool AttachExecuted { get; set; }
+
+    /// <summary>
+    /// When the cue has a hit normal: a 2D scene turns to face it (its +X along the normal), a 3D scene's up (+Y) points
+    /// along it. Off, the scene keeps its own rotation; its hook can still read the normal.
+    /// </summary>
+    [Export]
+    public bool RotateToNormal { get; set; }
 
     /// <summary>None if the name is empty or not found (reported once).</summary>
     public Tag Tag

@@ -20,6 +20,7 @@ public sealed class AbilityContainer
     private readonly ActiveEffectContainer _effects;
     private readonly Node _actor;
     private readonly Node _abilitySystem;
+    private readonly CueContainer _cues;
     private readonly List<Ability> _abilities = new(4);
 
     // Bound once, so giving an ability (or subscribing to tags again) allocates no new delegate.
@@ -37,13 +38,16 @@ public sealed class AbilityContainer
     /// <param name="effects">Cost and cooldown effects are applied here.</param>
     /// <param name="actor">The owning actor, see <see cref="Ability.Actor"/>; may be null.</param>
     /// <param name="abilitySystem">The actor's ability system component, see <see cref="Ability.AbilitySystem"/>; may be null.</param>
-    public AbilityContainer(AttributeContainer attributes, TagCountContainer tags, ActiveEffectContainer effects, Node actor = null, Node abilitySystem = null)
+    /// <param name="cues">Where the abilities show their cues (<see cref="Ability.ActivationCues"/>); null for none.</param>
+    public AbilityContainer(AttributeContainer attributes, TagCountContainer tags, ActiveEffectContainer effects, Node actor = null,
+        Node abilitySystem = null, CueContainer cues = null)
     {
         _attributes = attributes;
         _tags = tags;
         _effects = effects;
         _actor = actor;
         _abilitySystem = abilitySystem;
+        _cues = cues;
         _onAbilityEnded = OnAbilityEnded;
         _onTagPresenceChanged = OnTagPresenceChanged;
     }
@@ -124,7 +128,7 @@ public sealed class AbilityContainer
 
         var ability = (Ability)definition.Duplicate();
         AbilityHandle handle = AbilityHandle.Next();
-        ability.Grant(definition, handle, level, _attributes, _tags, _effects, _actor, _abilitySystem, _onAbilityEnded);
+        ability.Grant(definition, handle, level, _attributes, _tags, _effects, _cues, _actor, _abilitySystem, _onAbilityEnded);
         _abilities.Add(ability);
         if (ability.HasTagTriggers)
             TrackTagTriggers(ability);

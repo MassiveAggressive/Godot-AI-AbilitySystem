@@ -38,11 +38,11 @@
 
 - Plan onayı (kullanıcı): K16–K19, C1–C6, T1–T5 öneriler gibi — [Claude, 2026-11-19]
 - Hedefleme Faz 4 (takım ilişkisi): `TeamAttitude`, `TeamAttitudeMask`, `IAbilitySystem.Team`/`GetAttitude`, ASC `TeamName`/`Team`, `TargetQuery2D.Attitudes`; derleme temiz, testler kullanıcıda — [Claude, 2026-11-19]
+- Cue Faz 2 (`Systems/Cue.md`): `EffectSpec.SetHit`/`HitPoint`/`HitNormal`, `CueParameters` (spec'siz, konum, `WithLocation`), `CueEntry.RotateToNormal`, `CueContainer.Execute`/`Add`/`Remove`, `IAbilitySystem.Cues`, `Ability.ExecuteCue`/`AddCue`/`RemoveCue`/`ActivationCues`, `ApplyEffectToTargets` hedef başına vuruş; derleme temiz, testler kullanıcıda — [Claude, 2026-11-19]
 
 ## Yapılıyor
 
 ## Yapılacak (sırayla)
-- [ ] Cue Faz 2 (ability cue'ları, vuruş noktası)
 - [ ] Tag seçme ağacı (Tags reposu), sonra AbilitySystem alanlarının `TagNameHint`'e geçmesi
 
 ## Notlar

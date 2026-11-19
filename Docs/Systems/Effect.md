@@ -128,6 +128,7 @@ Modifier büyüklüğü, effect süresi ve periyodu için ortak sayı tanımı. 
 - `EffectSpec(EffectData data, Node instigator = null, Node causer = null, Node instigatorAbilitySystem = null)`; `AttributeContainer SourceAttributes { get; set; }`.
 - `SetCallerMagnitude(Tag, float)` (spec'i döner), `TryGetCallerMagnitude(Tag, out float)`: küçük liste, ilk `Set`'te oluşur.
 - `float CalculateMagnitude(Magnitude, AttributeContainer target)`: public (Ability maliyet kontrolü için).
+- Vuruş (`Cue.md` Faz 2): `SetHit(point, normal)` uygulamadan önce; `HitPoint`, `HitNormal`, `HasHit` (+2D). Effect katmanı yalnızca taşır, kullanmaz; cue'lar okur. `internal CopyWithHit`: hedef başına kopya (`SetByCaller` değerleriyle), `Ability.ApplyEffectToTargets` kullanır.
 - Instant'ta tüm magnitude'lar modifier'lar çalışmadan önce hesaplanır (hedeften okunan değer aynı effect'in önceki modifier'ından etkilenmez); 16 modifier'a kadar stack'te.
 - Uygulamadan sonra değiştirilmez; aynı spec birden fazla hedefe uygulanabilir, her hedef magnitude'ları kendine karşı hesaplar.
 

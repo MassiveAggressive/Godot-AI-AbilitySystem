@@ -42,6 +42,9 @@ public abstract partial class Ability : Resource
     // How many of the owned tags were given, so ending takes back exactly those.
     private int _ownedTagCount;
 
+    // Lasting cues this activation added (ActivationCues and AddCue), taken back when it ends.
+    private List<Tag> _addedCues;
+
     // While events or input reach the tasks, finished tasks stay in the list so the walk over it is not disturbed.
     private int _deliveryDepth;
 
@@ -111,6 +114,11 @@ public abstract partial class Ability : Resource
     [Export(PropertyHint.InputName)]
     public StringName InputAction { get; set; }
 
+    /// <summary>Lasting cues shown on the actor while the ability is active (e.g. "Cue.Cast.Fire" for a glowing hand).</summary>
+    [ExportGroup("Cues")]
+    [Export]
+    public TagContainer ActivationCues { get; set; }
+
     /// <summary>The .tres this copy was made from; null on the definition itself.</summary>
     public Ability Definition { get; private set; }
 
@@ -139,6 +147,9 @@ public abstract partial class Ability : Resource
     public TagCountContainer Tags { get; private set; }
 
     public ActiveEffectContainer Effects { get; private set; }
+
+    /// <summary>The actor's cues; may be null (an ability container made without one).</summary>
+    public CueContainer Cues { get; private set; }
 
     /// <summary>True while the actor has one of the <see cref="Cooldown"/> effect's granted tags (from any source).</summary>
     public bool IsOnCooldown
@@ -239,7 +250,9 @@ public abstract partial class Ability : Resource
 
     /// <summary>
     /// Applies <paramref name="data"/> from this actor to every entry of <paramref name="targets"/> whose actor has an
-    /// ability system (one spec shared by all). Returns how many accepted it (application tags or immunity may refuse).
+    /// ability system. Entries with a point get their own copy of the spec with that hit, so the effect's executed cues
+    /// open where each target was hit; the others share one spec. Returns how many accepted it (application tags or
+    /// immunity may refuse).
     /// </summary>
     protected int ApplyEffectToTargets(EffectData data, TargetData targets, Node causer = null)
     {
@@ -250,16 +263,81 @@ public abstract partial class Ability : Resource
         int applied = 0;
         for (int i = 0; i < targets.Count; i++)
         {
-            ActiveEffectContainer effects = IAbilitySystem.Find(targets[i].Actor)?.Effects;
+            TargetHit hit = targets[i];
+            ActiveEffectContainer effects = IAbilitySystem.Find(hit.Actor)?.Effects;
             if (effects == null)
                 continue;
 
             spec ??= MakeEffectSpec(data, causer);
-            if (effects.Apply(spec).IsValid)
+            EffectSpec applying = hit.HasPoint ? spec.CopyWithHit(hit.Point, hit.Normal) : spec;
+            if (effects.Apply(applying).IsValid)
                 applied++;
         }
 
         return applied;
+    }
+
+    /// <summary>Opens the short lived scene of <paramref name="tag"/> at the actor (e.g. a cast flash).</summary>
+    protected void ExecuteCue(Tag tag) => Cues?.Execute(tag, MakeCueParameters(tag));
+
+    /// <summary>Opens the short lived scene of <paramref name="tag"/> at <paramref name="location"/> (global).</summary>
+    protected void ExecuteCue(Tag tag, Vector2 location, Vector2 normal = default) =>
+        Cues?.Execute(tag, MakeCueParameters(tag).WithLocation(location, normal));
+
+    protected void ExecuteCue(TagContainer tags)
+    {
+        for (int i = 0; tags != null && i < tags.Count; i++)
+            ExecuteCue(tags[i]);
+    }
+
+    protected void ExecuteCue(TagContainer tags, Vector2 location, Vector2 normal = default)
+    {
+        for (int i = 0; tags != null && i < tags.Count; i++)
+            ExecuteCue(tags[i], location, normal);
+    }
+
+    /// <summary>
+    /// Shows the lasting scene of <paramref name="tag"/> on the actor until <see cref="RemoveCue(Tag)"/> or until the
+    /// ability ends. Only while active.
+    /// </summary>
+    protected void AddCue(Tag tag)
+    {
+        if (!IsActive || IsEnding)
+        {
+            GD.PushError($"Ability '{(Definition ?? this).ResourcePath}': a cue can only be added while the ability is active.");
+            return;
+        }
+
+        if (Cues == null || !tag.IsValid)
+            return;
+
+        // Listed before adding: a hook of this cue may end the ability, which must take this cue back too.
+        _addedCues ??= new List<Tag>(2);
+        _addedCues.Add(tag);
+        Cues.Add(tag, MakeCueParameters(tag));
+    }
+
+    protected void AddCue(TagContainer tags)
+    {
+        for (int i = 0; tags != null && i < tags.Count && IsActive && !IsEnding; i++)
+            AddCue(tags[i]);
+    }
+
+    /// <summary>Takes back one <see cref="AddCue(Tag)"/> of this ability; cues it did not add are left alone.</summary>
+    protected void RemoveCue(Tag tag)
+    {
+        int index = _addedCues?.LastIndexOf(tag) ?? -1;
+        if (index < 0)
+            return;
+
+        _addedCues.RemoveAt(index);
+        Cues?.Remove(tag, MakeCueParameters(tag));
+    }
+
+    protected void RemoveCue(TagContainer tags)
+    {
+        for (int i = 0; tags != null && i < tags.Count; i++)
+            RemoveCue(tags[i]);
     }
 
     /// <summary>Applies <paramref name="data"/> from this actor to <paramref name="target"/>; None if it has no ability system or refused it.</summary>
@@ -342,13 +420,14 @@ public abstract partial class Ability : Resource
     }
 
     internal void Grant(Ability definition, AbilityHandle handle, float level, AttributeContainer attributes, TagCountContainer tags,
-        ActiveEffectContainer effects, Node actor, Node abilitySystem, Action<Ability, bool> ended)
+        ActiveEffectContainer effects, CueContainer cues, Node actor, Node abilitySystem, Action<Ability, bool> ended)
     {
         Definition = definition;
         Handle = handle;
         Attributes = attributes;
         Tags = tags;
         Effects = effects;
+        Cues = cues;
         Actor = actor;
         AbilitySystem = abilitySystem;
         _ended = ended;
@@ -410,6 +489,9 @@ public abstract partial class Ability : Resource
             _ownedTagCount = i + 1;
             Tags.Add(owned[i]);
         }
+
+        if (IsActive && !IsEnding)
+            AddCue(ActivationCues);
     }
 
     internal void RunActivate(bool fromEvent, in AbilityEventData data)
@@ -449,6 +531,8 @@ public abstract partial class Ability : Resource
         }
         finally
         {
+            RemoveAddedCues();
+
             int count = _ownedTagCount;
             _ownedTagCount = 0;
             for (int i = 0; i < count; i++)
@@ -528,6 +612,22 @@ public abstract partial class Ability : Resource
         }
 
         return taken;
+    }
+
+    private CueParameters MakeCueParameters(Tag tag) => new(tag, Actor, instigator: Actor, level: Level);
+
+    /// <summary>Last added first; each is taken off the list before its hook runs.</summary>
+    private void RemoveAddedCues()
+    {
+        if (_addedCues == null)
+            return;
+
+        for (int i = _addedCues.Count - 1; i >= 0; i--)
+        {
+            Tag tag = _addedCues[i];
+            _addedCues.RemoveAt(i);
+            Cues?.Remove(tag, MakeCueParameters(tag));
+        }
     }
 
     private static bool HasTags(TagContainer tags) => tags != null && tags.Count > 0;

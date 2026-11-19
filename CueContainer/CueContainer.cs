@@ -10,8 +10,9 @@ namespace AbilitySystem;
 /// Shows an actor's effect cues (<see cref="EffectData.Cues"/>) with the scenes of a <see cref="CueLibrary"/>, by
 /// following the effects' events; the effects know nothing about cues. An execution opens a short lived scene each
 /// time. A duration or infinite effect keeps one scene per cue tag on the actor while it is active and not inhibited;
-/// effects with the same cue tag share it, and it goes with the last of them. Cues are only for looks: game logic
-/// does not wait on them.
+/// effects with the same cue tag share it, and it goes with the last of them. Code and abilities show cues without an
+/// effect with <see cref="Execute"/>, <see cref="Add"/> and <see cref="Remove(Tag)"/>. Cues are only for looks: game
+/// logic does not wait on them.
 /// </summary>
 public sealed class CueContainer
 {
@@ -57,6 +58,41 @@ public sealed class CueContainer
         effects.EffectExecuted += _onEffectExecuted;
         effects.InhibitionChanged += _onInhibitionChanged;
         _attached = true;
+    }
+
+    /// <summary>
+    /// Opens the short lived scene of <paramref name="tag"/> once, without an effect (e.g. a spark where a spell hit):
+    /// at <paramref name="parameters"/>' location if it has one, otherwise at the actor.
+    /// </summary>
+    public void Execute(Tag tag, in CueParameters parameters)
+    {
+        if (!_attached || !tag.IsValid)
+            return;
+
+        CueEntry entry = _library.Find(tag);
+        if (entry != null)
+            OpenExecuted(entry, parameters.WithTag(tag));
+    }
+
+    /// <summary>
+    /// Shows the lasting scene of <paramref name="tag"/> on the actor until a matching <see cref="Remove(Tag)"/>.
+    /// Shared with effects that have the same cue tag: one scene, and it goes with the last of them. Every
+    /// <c>Add</c> needs its own <c>Remove</c>; an extra <c>Remove</c> may take down an effect's scene.
+    /// </summary>
+    public void Add(Tag tag, in CueParameters parameters)
+    {
+        if (_attached && tag.IsValid)
+            AddCue(tag, parameters.WithTag(tag));
+    }
+
+    /// <summary>Takes back one <see cref="Add"/>.</summary>
+    public void Remove(Tag tag) => Remove(tag, new CueParameters(tag, _target));
+
+    /// <summary>Takes back one <see cref="Add"/>; <paramref name="parameters"/> go to the scene's <c>OnCueRemoved</c>.</summary>
+    public void Remove(Tag tag, in CueParameters parameters)
+    {
+        if (_attached && tag.IsValid)
+            RemoveCue(tag, parameters.WithTag(tag));
     }
 
     /// <summary>
@@ -153,7 +189,7 @@ public sealed class CueContainer
 
             // Counted before adding: a hook of this very cue may remove the effect, which must take this cue back too.
             _shownEffects[index] = new ShownEffect(effect, i + 1);
-            AddCue(cues[i], effect);
+            AddCue(cues[i], new CueParameters(cues[i], _target, effect.Spec, effect, effect.StackCount));
         }
     }
 
@@ -168,7 +204,7 @@ public sealed class CueContainer
         _shownEffects.RemoveAt(index);
         TagContainer cues = effect.Data.Cues;
         for (int i = 0; i < count; i++)
-            RemoveCue(cues[i], effect);
+            RemoveCue(cues[i], new CueParameters(cues[i], _target, effect.Spec, effect, effect.StackCount));
     }
 
     private int IndexOfShown(ActiveEffect effect)
@@ -182,7 +218,7 @@ public sealed class CueContainer
         return -1;
     }
 
-    private void AddCue(Tag tag, ActiveEffect effect)
+    private void AddCue(Tag tag, in CueParameters parameters)
     {
         if (_activeCues.TryGetValue(tag.Id, out ActiveCue cue))
         {
@@ -196,7 +232,6 @@ public sealed class CueContainer
 
         Node scene = entry.Scene.Instantiate();
         _activeCues[tag.Id] = new ActiveCue(scene, 1);
-        var parameters = new CueParameters(tag, _target, effect.Spec, effect, effect.StackCount);
         if (CanAddChild(_target))
             PlaceAdded(scene, parameters);
         else
@@ -223,7 +258,7 @@ public sealed class CueContainer
             notify.OnCueAdded(in parameters);
     }
 
-    private void RemoveCue(Tag tag, ActiveEffect effect)
+    private void RemoveCue(Tag tag, in CueParameters parameters)
     {
         if (!_activeCues.TryGetValue(tag.Id, out ActiveCue cue))
             return;
@@ -246,7 +281,6 @@ public sealed class CueContainer
             return;
         }
 
-        var parameters = new CueParameters(tag, _target, effect.Spec, effect, effect.StackCount);
         if (scene is ICueNotify notify && notify.OnCueRemoved(in parameters))
             return;
 
@@ -275,7 +309,9 @@ public sealed class CueContainer
         }
 
         parent.AddChild(scene);
-        if (!entry.AttachExecuted && GodotObject.IsInstanceValid(_target))
+        if (parameters.HasLocation)
+            Place(scene, entry, parameters);
+        else if (!entry.AttachExecuted && GodotObject.IsInstanceValid(_target))
             MoveTo(scene, _target);
 
         if (scene is ICueNotify notify)
@@ -298,6 +334,37 @@ public sealed class CueContainer
             scene2D.GlobalPosition = target2D.GlobalPosition;
         else if (scene is Node3D scene3D && target is Node3D target3D)
             scene3D.GlobalPosition = target3D.GlobalPosition;
+    }
+
+    /// <summary>Places a 2D or 3D scene at the cue's location, turned to its normal if the entry asks for it.</summary>
+    private static void Place(Node scene, CueEntry entry, in CueParameters parameters)
+    {
+        if (!scene.IsInsideTree())
+            return;
+
+        bool rotate = entry.RotateToNormal && parameters.Normal != Vector3.Zero;
+        if (scene is Node2D scene2D)
+        {
+            scene2D.GlobalPosition = parameters.Location2D;
+            if (rotate && parameters.Normal2D != Vector2.Zero)
+                scene2D.GlobalRotation = parameters.Normal2D.Angle();
+        }
+        else if (scene is Node3D scene3D)
+        {
+            scene3D.GlobalPosition = parameters.Location;
+            if (rotate)
+                scene3D.GlobalBasis = UpAlong(parameters.Normal.Normalized(), scene3D.GlobalBasis.Scale);
+        }
+    }
+
+    /// <summary>A basis whose +Y is <paramref name="up"/>, keeping <paramref name="scale"/>.</summary>
+    private static Basis UpAlong(Vector3 up, Vector3 scale)
+    {
+        // Any direction not parallel to up gives the other two axes.
+        Vector3 reference = Mathf.Abs(up.Dot(Vector3.Forward)) > 0.99f ? Vector3.Right : Vector3.Forward;
+        Vector3 x = reference.Cross(up).Normalized();
+        Vector3 z = x.Cross(up);
+        return new Basis(x * scale.X, up * scale.Y, z * scale.Z);
     }
 
     private static void FreeScene(Node scene)

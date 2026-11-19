@@ -1,6 +1,13 @@
 # Cue Sistemi — Plan
 
-> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless. Faz 2 (ability cue'ları, vuruş noktası) **onaylandı** (kullanıcı, 2026-11-19): C1–C6 öneriler gibi.
+> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless. Faz 2 (ability cue'ları, vuruş noktası) **onaylandı** (kullanıcı, 2026-11-19): C1–C6 öneriler gibi; **uygulandı**, derleme temiz, testler kullanıcıda.
+>
+> Faz 2 uygulamasında netleşenler:
+> - Koddan cue parametresi: `new CueParameters(tag, target, instigator, causer, level)`, konum `WithLocation(point, normal)` ile (2D ve 3D). `CueContainer.Execute`/`Add`/`Remove` parametrenin tag'ini verilen tag'le değiştirir.
+> - Ability yardımcıları 2D konum alır (`ExecuteCue(tag, location, normal)`); 3D için `Cues.Execute` doğrudan kullanılır. `AddCue` yalnızca aktifken (`RunTask` gibi); `RemoveCue` yalnızca ability'nin kendi eklediğini geri alır. Bitişte eklenenler sondan başa kalkar (`Finish`'in `finally`'sinde, owned tag'lerden önce).
+> - `ActivationCues` owned tag'lerden sonra eklenir; `CommitOnActivate` başarısızsa ability zaten aktifleşmez.
+> - Süren (Added) sahne konumu kullanmaz, aktörün çocuğu olarak açılır; konum yalnızca Executed sahnede.
+> - 3D `RotateToNormal` sahnenin ölçeğini korur.
 > Karşılığı: Unreal `GameplayCue` (`UGameplayCueManager`, `FGameplayCueParameters`, `AGameplayCueNotify_Actor`/`UGameplayCueNotify_Static`, `FGameplayEffectCue`). `Gameplay` ön eki yok.
 
 ## Amaç
@@ -138,7 +145,7 @@ spec.SetHit(contactPoint, contactNormal);   // Damage.Cues = Cue.Hit.Fire → k�
 target.Effects.Apply(spec);
 
 // Effect olmadan hedefte görsel:
-IAbilitySystem.Find(enemy)?.Cues.Execute(sparkTag, new CueParameters(sparkTag, enemy, instigator: Actor, location: point));
+IAbilitySystem.Find(enemy)?.Cues.Execute(sparkTag, new CueParameters(sparkTag, enemy, instigator: Actor).WithLocation(point));
 ```
 
 ### Test

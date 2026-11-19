@@ -50,6 +50,50 @@ public sealed class EffectSpec
     /// </summary>
     public float Level { get; set; } = 1f;
 
+    /// <summary>Where it hit (global), set with <see cref="SetHit(Vector2, Vector2)"/>; the effect's executed cues open there.</summary>
+    public Vector3 HitPoint { get; private set; }
+
+    /// <summary>The surface direction at <see cref="HitPoint"/>; zero if not known.</summary>
+    public Vector3 HitNormal { get; private set; }
+
+    public bool HasHit { get; private set; }
+
+    public Vector2 HitPoint2D => new(HitPoint.X, HitPoint.Y);
+
+    public Vector2 HitNormal2D => new(HitNormal.X, HitNormal.Y);
+
+    /// <summary>
+    /// Records where it hit (e.g. a projectile's contact), before <see cref="ActiveEffectContainer.Apply"/>. A spec
+    /// applied to several targets has one hit; <c>Ability.ApplyEffectToTargets</c> gives each target its own.
+    /// Returns this spec for chaining.
+    /// </summary>
+    public EffectSpec SetHit(Vector2 point, Vector2 normal = default) =>
+        SetHit(new Vector3(point.X, point.Y, 0f), new Vector3(normal.X, normal.Y, 0f));
+
+    public EffectSpec SetHit(Vector3 point, Vector3 normal = default)
+    {
+        HitPoint = point;
+        HitNormal = normal;
+        HasHit = true;
+        return this;
+    }
+
+    /// <summary>A copy with another hit (and the same SetByCaller values), for one of several targets.</summary>
+    internal EffectSpec CopyWithHit(Vector3 point, Vector3 normal)
+    {
+        var copy = new EffectSpec(Data, Instigator, Causer, InstigatorAbilitySystem)
+        {
+            SourceAttributes = SourceAttributes,
+            SourceTags = SourceTags,
+            Level = Level,
+        };
+
+        if (_callerMagnitudes != null)
+            copy._callerMagnitudes = new List<CallerMagnitude>(_callerMagnitudes);
+
+        return copy.SetHit(point, normal);
+    }
+
     /// <summary>Sets the value of SetByCaller magnitudes keyed by <paramref name="tag"/>. Returns this spec for chaining.</summary>
     public EffectSpec SetCallerMagnitude(Tag tag, float value)
     {

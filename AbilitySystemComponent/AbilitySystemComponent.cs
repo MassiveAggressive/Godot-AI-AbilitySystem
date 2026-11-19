@@ -148,8 +148,10 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         Attributes = new AttributeContainer();
         Tags = new TagCountContainer();
         Effects = new ActiveEffectContainer(Attributes, Tags);
-        Abilities = new AbilityContainer(Attributes, Tags, Effects, Actor, this);
+
+        // Before the abilities: they show cues through it.
         Cues = new CueContainer(Actor, Effects);
+        Abilities = new AbilityContainer(Attributes, Tags, Effects, Actor, this, Cues);
 
         foreach (string setName in _attributeSets)
         {

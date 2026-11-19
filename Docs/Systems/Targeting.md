@@ -6,7 +6,7 @@
 > - `TeamAttitudeMask`'te `None`/`All` üyesi yok: Godot inspector'da onları da ayrı onay kutusu gösterirdi. Varsayılan üçü birden.
 > - Maske üçünü de içeriyorsa filtre hiç çalışmaz: kaynak sistemi aranmaz, eski davranış ve maliyet aynı kalır.
 > - Kaynak ve hedef aynı sistemse `Friendly`, takım olmasa da (`ExcludeSource` kapalıyken kendini iyileştirme). Sistemi olmayan kaynak her hedefe `Neutral`.
-> - `TeamName` çalışma anında değiştirilirse `Team` hemen yeniden çözülür. K5 (vuruş noktası cue'ya) artık `Cue.md` Faz 2'de.
+> - `TeamName` çalışma anında değiştirilirse `Team` hemen yeniden çözülür. K5 (vuruş noktası cue'ya) `Cue.md` Faz 2'de uygulandı: `ApplyEffectToTargets` noktası olan hedefe kendi vuruşuyla spec kopyası uygular.
 >
 > Faz 3 uygulamasında netleşenler:
 > - Nişangâh, kaynağın (aktörün) çocuğu olarak eklenir. Onay anında fare yeniden okunur (`RefreshAim`), çünkü giriş olayı o karenin `_Process`'inden önce gelir. Menzile çekilen nokta küçük bir tolerans (0.01) ile menzil içinde sayılır.
