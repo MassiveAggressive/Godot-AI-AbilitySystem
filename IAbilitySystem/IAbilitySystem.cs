@@ -28,7 +28,11 @@ public interface IAbilitySystem
     /// <summary>
     /// How <paramref name="from"/> stands toward <paramref name="to"/>: the same team (or the same system) is
     /// friendly, two different teams are hostile, and without a team on either side (or without a system) neutral.
-    /// Teams match exactly: "Team.Monster.Orc" and "Team.Monster.Goblin" are hostile.
+    /// Teams match exactly: "Team.Monster.Orc" and "Team.Monster.Goblin" are hostile. From nodes (e.g. a hitbox),
+    /// find the systems first:
+    /// <code>
+    /// IAbilitySystem.GetAttitude(IAbilitySystem.FindInParents(Actor), IAbilitySystem.FindInParents(hitbox))
+    /// </code>
     /// </summary>
     static TeamAttitude GetAttitude(IAbilitySystem from, IAbilitySystem to)
     {
@@ -42,9 +46,6 @@ public interface IAbilitySystem
 
         return fromTeam.Id == toTeam.Id ? TeamAttitude.Friendly : TeamAttitude.Hostile;
     }
-
-    /// <summary>The attitude between the systems of two nodes (or of their nearest ancestors with one, e.g. a hitbox).</summary>
-    static TeamAttitude GetAttitude(Node from, Node to) => GetAttitude(FindInParents(from), FindInParents(to));
 
     /// <summary><paramref name="node"/> itself or its first direct child that implements this; null if none.</summary>
     static IAbilitySystem Find(Node node)

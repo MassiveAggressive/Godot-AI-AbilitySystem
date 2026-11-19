@@ -4,7 +4,7 @@
 >
 > Faz 4 uygulamasında netleşenler:
 > - Test doğruladı: takım yalnızca `Team`'dir, aktörün canlı tag'lerinde değildir; `BlockedTags`/`RequiredTags` takım tag'ine bakmaz. Çalışma anında `Team` değişince sorgu hemen yeni takıma göre çalışır. Takımsız kaynak herkese nötr.
-> - Bilinen sürtünme: iki değişken de `AbilitySystemComponent` tipindeyse `IAbilitySystem.GetAttitude(a, b)` çağrısı (Node ve arayüz aşırı yüklemeleri) derlenmez, belirsiz kalır. `Node`/`IAbilitySystem` tipli değişkenlerle ve karışık çağrılarda sorun yok.
+> - K19 değişti (kullanıcı, 2026-11-19): `GetAttitude(Node, Node)` kaldırıldı. `AbilitySystemComponent` hem `Node` hem `IAbilitySystem` olduğu için iki ASC değişkeniyle çağrı iki aşırı yükleme arasında belirsiz kalıp derlenmiyordu. Düğümden çağırırken önce `IAbilitySystem.FindInParents` kullanılır.
 > - `TeamAttitudeMask`'te `None`/`All` üyesi yok: Godot inspector'da onları da ayrı onay kutusu gösterirdi. Varsayılan üçü birden.
 > - Maske üçünü de içeriyorsa filtre hiç çalışmaz: kaynak sistemi aranmaz, eski davranış ve maliyet aynı kalır.
 > - Kaynak ve hedef aynı sistemse `Friendly`, takım olmasa da (`ExcludeSource` kapalıyken kendini iyileştirme). Sistemi olmayan kaynak her hedefe `Neutral`.
@@ -234,7 +234,7 @@ Amaç: alan saldırısı yalnızca düşmanı, iyileştirme yalnızca dostu buls
 | K16 | Takım nerede tutulur | (a) ASC'de: inspector'da tag menüsünden `TeamName`, çalışma anında `Tag Team { get; set; }`. `IAbilitySystem.Team` ile okunur. (b) Aktörün canlı tag'lerinde `Team.` altındaki tag: effect ile takım değişebilir (büyülenme). Ama aynı anda iki takım tag'i olabilir ve hangisinin geçerli olduğu belirsiz kalır. (c) `int TeamId`: menü yok, okunaksız. | (a). Geçici takım değişimi için kod `Team`'i değiştirir. Effect ile takım değiştirme IDEAS'a. |
 | K17 | İlişki kuralı | Aynı takım: `Friendly`. İkisinin de takımı var ve farklı: `Hostile`. Birinin takımı yok: `Neutral`. Tam eşleşme: `Team.Monster.Orc` ile `Team.Monster.Goblin` birbirine düşman. Alternatifler: hiyerarşik ittifak (ortak ebeveyn dost sayılır) veya proje geneli ilişki tablosu (Unreal `SetAttitudeSolver`). | Basit kural. İttifak tablosu IDEAS'a. Takımsız aktör (hayvan, varil) herkese `Neutral`. |
 | K18 | Sorgu filtresi | `TargetQuery2D` Filter grubuna `Attitudes` alanı: `[Flags] TeamAttitudeMask` (`Hostile`, `Neutral`, `Friendly`), varsayılan hepsi (filtresiz, bugünkü davranış). Kaynağın takımı onun ASC'sinden okunur; ASC yoksa kaynak takımsızdır. ASC'siz hedef (`RequireAbilitySystem` kapalı) `Neutral` sayılır. Kaynağın kendisi `ExcludeSource` ile ayrıca yönetilir; kapalıysa `Friendly` sayılır. | Bu. |
-| K19 | Kod yardımcısı | AI ve özel filtreler için `static TeamAttitude IAbilitySystem.GetAttitude(IAbilitySystem a, IAbilitySystem b)` ve düğüm alan sürümü `GetAttitude(Node a, Node b)` (`FindInParents` ile). | İkisi. |
+| K19 | Kod yardımcısı | AI ve özel filtreler için `static TeamAttitude IAbilitySystem.GetAttitude(IAbilitySystem a, IAbilitySystem b)` ve düğüm alan sürümü `GetAttitude(Node a, Node b)` (`FindInParents` ile). | İkisi. Sonradan düğüm sürümü kaldırıldı (belirsiz çağrı, yukarıdaki not). |
 
 ### Sınıflar ve ekler
 | Sınıf | Tür | Klasör |
@@ -251,7 +251,7 @@ Amaç: alan saldırısı yalnızca düşmanı, iyileştirme yalnızca dostu buls
 ### Kullanım
 ```csharp
 // FlameNova: Area.Attitudes = Hostile. Heal Circle: Attitudes = Friendly, ExcludeSource kapalı (kendini de iyileştirir).
-if (IAbilitySystem.GetAttitude(Actor, enemy) == TeamAttitude.Hostile)
+if (IAbilitySystem.GetAttitude(IAbilitySystem.Find(Actor), IAbilitySystem.FindInParents(enemy)) == TeamAttitude.Hostile)
     abilities.TryActivate(attack, new AbilityEventData(attackTag, Actor, enemy));
 ```
 
