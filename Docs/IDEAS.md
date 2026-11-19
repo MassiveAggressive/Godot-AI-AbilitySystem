@@ -46,7 +46,7 @@
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
 - `TagCountContainer` için tag'e özel dinleyici.
-- **Ağaçtan yeni tag ekleme/yeniden adlandırma:** seçiciden `Tags.tres`'e yazma (Unreal "Add New Tag"); seçme ağacının kendisi Tags reposunda `Docs/Systems/TagPicker.md`'de planlı.
+- **Ağaçtan tag yeniden adlandırma/silme:** kullanan resource'larla birlikte; ağaçtan yeni tag ekleme Tags reposunda yapıldı (`Docs/Systems/TagPicker.md` T6).
 
 ## Timers (Godot-AI-Timers reposu)
 - Zaman genişletme: aktöre/gruba özel zaman ölçeği (bullet-time, donma). Şu an tek global saat.

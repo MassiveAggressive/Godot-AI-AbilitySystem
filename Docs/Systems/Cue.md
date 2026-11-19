@@ -1,8 +1,9 @@
 # Cue Sistemi — Plan
 
-> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless. Faz 2 (ability cue'ları, vuruş noktası) **onaylandı** (kullanıcı, 2026-11-19): C1–C6 öneriler gibi; **uygulandı**, derleme temiz, testler kullanıcıda.
+> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless. Faz 2 (ability cue'ları, vuruş noktası) **onaylandı** (kullanıcı, 2026-11-19): C1–C6 öneriler gibi; **uygulandı**; takım testleriyle birlikte 140 test headless geçti (Sonnet, 2026-11-19).
 >
 > Faz 2 uygulamasında netleşenler:
+> - Test doğruladı: vuruşlu/vuruşsuz Executed konumu, `AttachExecuted` ile konum, `RotateToNormal` (2D dört yön, 3D taban ve `Forward` normali), koddan Execute/Add/Remove ve ortak sayaç, ability cue'larının bitişte/iptalde geri alınması, `Added` kancasından ability'yi bitirme, `ApplyEffectToTargets` hedef başına vuruş, kopyada `SetByCaller`'ın korunması, cue'suz `AbilityContainer`.
 > - Koddan cue parametresi: `new CueParameters(tag, target, instigator, causer, level)`, konum `WithLocation(point, normal)` ile (2D ve 3D). `CueContainer.Execute`/`Add`/`Remove` parametrenin tag'ini verilen tag'le değiştirir.
 > - Ability yardımcıları 2D konum alır (`ExecuteCue(tag, location, normal)`); 3D için `Cues.Execute` doğrudan kullanılır. `AddCue` yalnızca aktifken (`RunTask` gibi); `RemoveCue` yalnızca ability'nin kendi eklediğini geri alır. Bitişte eklenenler sondan başa kalkar (`Finish`'in `finally`'sinde, owned tag'lerden önce).
 > - `ActivationCues` owned tag'lerden sonra eklenir; `CommitOnActivate` başarısızsa ability zaten aktifleşmez.

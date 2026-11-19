@@ -255,8 +255,9 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         }
         else if (name == nameof(TeamName))
         {
-            property["hint"] = (int)PropertyHint.Enum;
-            property["hint_string"] = TagContainer.BuildTagOptions();
+            // Picked from the Tags plugin's tag tree.
+            property["hint"] = (int)PropertyHint.None;
+            property["hint_string"] = TagContainer.TagNameHint;
         }
         else if (name == nameof(StartingAbilities))
         {

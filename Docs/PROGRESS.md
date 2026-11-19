@@ -37,13 +37,15 @@
 - Plan taslakları: takım ilişkisi (`Targeting.md` Faz 4, K16–K19), ability cue'ları + vuruş noktası (`Cue.md` Faz 2, C1–C6), tag seçme ağacı (Tags reposu `Docs/Systems/TagPicker.md`, T1–T5) — [Claude, 2026-11-19]
 
 - Plan onayı (kullanıcı): K16–K19, C1–C6, T1–T5 öneriler gibi — [Claude, 2026-11-19]
-- Hedefleme Faz 4 (takım ilişkisi): `TeamAttitude`, `TeamAttitudeMask`, `IAbilitySystem.Team`/`GetAttitude`, ASC `TeamName`/`Team`, `TargetQuery2D.Attitudes`; derleme temiz, testler kullanıcıda — [Claude, 2026-11-19]
-- Cue Faz 2 (`Systems/Cue.md`): `EffectSpec.SetHit`/`HitPoint`/`HitNormal`, `CueParameters` (spec'siz, konum, `WithLocation`), `CueEntry.RotateToNormal`, `CueContainer.Execute`/`Add`/`Remove`, `IAbilitySystem.Cues`, `Ability.ExecuteCue`/`AddCue`/`RemoveCue`/`ActivationCues`, `ApplyEffectToTargets` hedef başına vuruş; derleme temiz, testler kullanıcıda — [Claude, 2026-11-19]
+- Hedefleme Faz 4 (takım ilişkisi): `TeamAttitude`, `TeamAttitudeMask`, `IAbilitySystem.Team`/`GetAttitude`, ASC `TeamName`/`Team`, `TargetQuery2D.Attitudes`; testler Cue Faz 2 ile birlikte (140) geçti — [Claude, 2026-11-19]
+- Cue Faz 2 (`Systems/Cue.md`): `EffectSpec.SetHit`/`HitPoint`/`HitNormal`, `CueParameters` (spec'siz, konum, `WithLocation`), `CueEntry.RotateToNormal`, `CueContainer.Execute`/`Add`/`Remove`, `IAbilitySystem.Cues`, `Ability.ExecuteCue`/`AddCue`/`RemoveCue`/`ActivationCues`, `ApplyEffectToTargets` hedef başına vuruş; takım filtresiyle birlikte 140 test headless geçti (Sonnet) — [Claude, 2026-11-19]
 
 ## Yapılıyor
 
+- Tek tag alanları (`CueEntry.TagName`, `Magnitude.CallerTagName`, ASC `TeamName`) Tags reposunun ağaçlı seçicisine geçti (`TagContainer.TagNameHint`) — [Claude, 2026-11-19]
+
 ## Yapılacak (sırayla)
-- [ ] Tag seçme ağacı (Tags reposu), sonra AbilitySystem alanlarının `TagNameHint`'e geçmesi
+- [ ] Editör denemesi (kullanıcı): tag ağacı (çoklu/tekli, arama, geri al), takım alanı, `ActivationCues`, `RotateToNormal`
 
 ## Notlar
 - Testler headless Godot'ta: `Godot_..._console.exe --headless --path <proje> res://<test sahnesi>`; geçici test sahnesi proje kökünde açılıp sonra silinir. Timers eklentisi kapalıysa test `TimerManager` düğümünü kendisi ekler.

@@ -184,7 +184,11 @@ public partial class Magnitude : Resource
         }
 
         if (name == nameof(CallerTagName))
-            SetDropdown(property, TagContainer.BuildTagOptions());
+        {
+            // Picked from the Tags plugin's tag tree.
+            property["hint"] = (int)PropertyHint.None;
+            property["hint_string"] = TagContainer.TagNameHint;
+        }
         else if (name == nameof(BackingAttributeName))
             SetDropdown(property, AttributeRegistry.BuildOptions());
     }

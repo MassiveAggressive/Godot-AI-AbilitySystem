@@ -74,7 +74,8 @@ public partial class CueEntry : Resource
         if (!Engine.IsEditorHint() || property["name"].AsString() != nameof(TagName))
             return;
 
-        property["hint"] = (int)PropertyHint.Enum;
-        property["hint_string"] = TagContainer.BuildTagOptions();
+        // Picked from the Tags plugin's tag tree.
+        property["hint"] = (int)PropertyHint.None;
+        property["hint_string"] = TagContainer.TagNameHint;
     }
 }

@@ -1,8 +1,10 @@
 # Hedefleme Sistemi — Plan
 
-> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (70 test headless geçti). Faz 3 **onaylandı** (kullanıcı, 2026-11-19): K8–K14 öneriler gibi; örnek sahne yok (K15 çıkarıldı). Faz 3 **uygulandı**; 111 test headless geçti (Sonnet, 2026-11-19). Faz 4 (takım ilişkisi) **onaylandı** (kullanıcı, 2026-11-19): K16–K19 öneriler gibi; **uygulandı**, derleme temiz, testler kullanıcıda.
+> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (70 test headless geçti). Faz 3 **onaylandı** (kullanıcı, 2026-11-19): K8–K14 öneriler gibi; örnek sahne yok (K15 çıkarıldı). Faz 3 **uygulandı**; 111 test headless geçti (Sonnet, 2026-11-19). Faz 4 (takım ilişkisi) **onaylandı** (kullanıcı, 2026-11-19): K16–K19 öneriler gibi; **uygulandı**; takım ve cue testleriyle birlikte 140 test headless geçti (Sonnet, 2026-11-19).
 >
 > Faz 4 uygulamasında netleşenler:
+> - Test doğruladı: takım yalnızca `Team`'dir, aktörün canlı tag'lerinde değildir; `BlockedTags`/`RequiredTags` takım tag'ine bakmaz. Çalışma anında `Team` değişince sorgu hemen yeni takıma göre çalışır. Takımsız kaynak herkese nötr.
+> - Bilinen sürtünme: iki değişken de `AbilitySystemComponent` tipindeyse `IAbilitySystem.GetAttitude(a, b)` çağrısı (Node ve arayüz aşırı yüklemeleri) derlenmez, belirsiz kalır. `Node`/`IAbilitySystem` tipli değişkenlerle ve karışık çağrılarda sorun yok.
 > - `TeamAttitudeMask`'te `None`/`All` üyesi yok: Godot inspector'da onları da ayrı onay kutusu gösterirdi. Varsayılan üçü birden.
 > - Maske üçünü de içeriyorsa filtre hiç çalışmaz: kaynak sistemi aranmaz, eski davranış ve maliyet aynı kalır.
 > - Kaynak ve hedef aynı sistemse `Friendly`, takım olmasa da (`ExcludeSource` kapalıyken kendini iyileştirme). Sistemi olmayan kaynak her hedefe `Neutral`.
