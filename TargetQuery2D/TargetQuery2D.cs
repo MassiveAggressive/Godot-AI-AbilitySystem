@@ -27,6 +27,8 @@ public partial class TargetQuery2D : Resource
     // Colliders asked from the physics server per run; beyond this many in the area the rest are not seen.
     private const int MaxColliders = 64;
 
+    private const TeamAttitudeMask AllAttitudes = TeamAttitudeMask.Hostile | TeamAttitudeMask.Neutral | TeamAttitudeMask.Friendly;
+
     private static readonly Variant ColliderKey = "collider";
     private static readonly Variant PositionKey = "position";
     private static readonly Variant NormalKey = "normal";
@@ -41,6 +43,9 @@ public partial class TargetQuery2D : Resource
     private Godot.Collections.Array<Rid> _exclude;
     private List<Candidate> _candidates;
     private bool _running;
+
+    // The source's system during a run, looked up once for the team filter.
+    private IAbilitySystem _sourceSystem;
 
     [ExportGroup("Shape")]
     [Export]
@@ -89,6 +94,14 @@ public partial class TargetQuery2D : Resource
     [Export]
     public bool RequireAbilitySystem { get; set; } = true;
 
+    /// <summary>
+    /// Which targets by their team toward the source (<see cref="IAbilitySystem.GetAttitude(IAbilitySystem, IAbilitySystem)"/>):
+    /// e.g. only Hostile for an attack, only Friendly for a heal. Targets without an ability system are neutral; with
+    /// <see cref="ExcludeSource"/> off the source itself is friendly. All by default.
+    /// </summary>
+    [Export]
+    public TeamAttitudeMask Attitudes { get; set; } = AllAttitudes;
+
     /// <summary>The target must have all of these.</summary>
     [Export]
     public TagContainer RequiredTags { get; set; }
@@ -130,6 +143,7 @@ public partial class TargetQuery2D : Resource
 
         _running = true;
         _candidates ??= new List<Candidate>(8);
+        _sourceSystem = FiltersTeams ? IAbilitySystem.FindInParents(source) : null;
         try
         {
             Vector2 forward = direction == Vector2.Zero ? Vector2.Right : direction.Normalized();
@@ -153,6 +167,7 @@ public partial class TargetQuery2D : Resource
         {
             // Not kept: the nodes may be freed before the next run.
             _candidates.Clear();
+            _sourceSystem = null;
             _running = false;
         }
     }
@@ -244,6 +259,9 @@ public partial class TargetQuery2D : Resource
         if (into.Contains(actor) || HasCandidate(actor))
             return false;
 
+        if (FiltersTeams && !AllowsAttitude(IAbilitySystem.GetAttitude(_sourceSystem, system)))
+            return false;
+
         TagCountContainer tags = system?.Tags;
         if (HasTags(RequiredTags) && (tags == null || !tags.HasAll(RequiredTags)))
             return false;
@@ -287,6 +305,15 @@ public partial class TargetQuery2D : Resource
     }
 
     private static bool HasTags(TagContainer tags) => tags != null && tags.Count > 0;
+
+    private bool FiltersTeams => (Attitudes & AllAttitudes) != AllAttitudes;
+
+    private bool AllowsAttitude(TeamAttitude attitude) => attitude switch
+    {
+        TeamAttitude.Friendly => (Attitudes & TeamAttitudeMask.Friendly) != 0,
+        TeamAttitude.Hostile => (Attitudes & TeamAttitudeMask.Hostile) != 0,
+        _ => (Attitudes & TeamAttitudeMask.Neutral) != 0,
+    };
 
     // Godot API: the property info arrives as a Godot Dictionary.
     public override void _ValidateProperty(Godot.Collections.Dictionary property)

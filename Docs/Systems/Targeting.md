@@ -1,6 +1,12 @@
 # Hedefleme Sistemi — Plan
 
-> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (70 test headless geçti). Faz 3 **onaylandı** (kullanıcı, 2026-11-19): K8–K14 öneriler gibi; örnek sahne yok (K15 çıkarıldı). Faz 3 **uygulandı**; 111 test headless geçti (Sonnet, 2026-11-19).
+> Durum: **onaylandı** (kullanıcı, 2026-11-18): K1–K7 öneriler gibi. Faz 1 ve 2 **uygulandı** (70 test headless geçti). Faz 3 **onaylandı** (kullanıcı, 2026-11-19): K8–K14 öneriler gibi; örnek sahne yok (K15 çıkarıldı). Faz 3 **uygulandı**; 111 test headless geçti (Sonnet, 2026-11-19). Faz 4 (takım ilişkisi) **onaylandı** (kullanıcı, 2026-11-19): K16–K19 öneriler gibi; **uygulandı**, derleme temiz, testler kullanıcıda.
+>
+> Faz 4 uygulamasında netleşenler:
+> - `TeamAttitudeMask`'te `None`/`All` üyesi yok: Godot inspector'da onları da ayrı onay kutusu gösterirdi. Varsayılan üçü birden.
+> - Maske üçünü de içeriyorsa filtre hiç çalışmaz: kaynak sistemi aranmaz, eski davranış ve maliyet aynı kalır.
+> - Kaynak ve hedef aynı sistemse `Friendly`, takım olmasa da (`ExcludeSource` kapalıyken kendini iyileştirme). Sistemi olmayan kaynak her hedefe `Neutral`.
+> - `TeamName` çalışma anında değiştirilirse `Team` hemen yeniden çözülür. K5 (vuruş noktası cue'ya) artık `Cue.md` Faz 2'de.
 >
 > Faz 3 uygulamasında netleşenler:
 > - Nişangâh, kaynağın (aktörün) çocuğu olarak eklenir. Onay anında fare yeniden okunur (`RefreshAim`), çünkü giriş olayı o karenin `_Process`'inden önce gelir. Menzile çekilen nokta küçük bir tolerans (0.01) ile menzil içinde sayılır.
@@ -216,6 +222,50 @@ public partial class Meteor : Ability
 ```
 - Nişan sırasında başka ability'leri engellemek için mevcut yol kullanılır: `ActivationOwnedTags: State.Aiming` + diğerlerinde `ActivationBlockedTags`.
 
+## Faz 4 — Takım İlişkisi
+
+Amaç: alan saldırısı yalnızca düşmanı, iyileştirme yalnızca dostu bulsun. Şu an bunu ancak hedefin tag'leriyle yapabiliyoruz. Bu da "kaynağa göre düşman" bilgisini vermiyor: iki takım birbirine saldırınca aynı sorgu ikisinde de çalışmaz. Karşılığı: Unreal `IGenericTeamAgentInterface`, `FGenericTeamId`, `ETeamAttitude`.
+
+### Kararlar (Faz 4)
+| # | Konu | Seçenekler | Öneri |
+|---|---|---|---|
+| K16 | Takım nerede tutulur | (a) ASC'de: inspector'da tag menüsünden `TeamName`, çalışma anında `Tag Team { get; set; }`. `IAbilitySystem.Team` ile okunur. (b) Aktörün canlı tag'lerinde `Team.` altındaki tag: effect ile takım değişebilir (büyülenme). Ama aynı anda iki takım tag'i olabilir ve hangisinin geçerli olduğu belirsiz kalır. (c) `int TeamId`: menü yok, okunaksız. | (a). Geçici takım değişimi için kod `Team`'i değiştirir. Effect ile takım değiştirme IDEAS'a. |
+| K17 | İlişki kuralı | Aynı takım: `Friendly`. İkisinin de takımı var ve farklı: `Hostile`. Birinin takımı yok: `Neutral`. Tam eşleşme: `Team.Monster.Orc` ile `Team.Monster.Goblin` birbirine düşman. Alternatifler: hiyerarşik ittifak (ortak ebeveyn dost sayılır) veya proje geneli ilişki tablosu (Unreal `SetAttitudeSolver`). | Basit kural. İttifak tablosu IDEAS'a. Takımsız aktör (hayvan, varil) herkese `Neutral`. |
+| K18 | Sorgu filtresi | `TargetQuery2D` Filter grubuna `Attitudes` alanı: `[Flags] TeamAttitudeMask` (`Hostile`, `Neutral`, `Friendly`), varsayılan hepsi (filtresiz, bugünkü davranış). Kaynağın takımı onun ASC'sinden okunur; ASC yoksa kaynak takımsızdır. ASC'siz hedef (`RequireAbilitySystem` kapalı) `Neutral` sayılır. Kaynağın kendisi `ExcludeSource` ile ayrıca yönetilir; kapalıysa `Friendly` sayılır. | Bu. |
+| K19 | Kod yardımcısı | AI ve özel filtreler için `static TeamAttitude IAbilitySystem.GetAttitude(IAbilitySystem a, IAbilitySystem b)` ve düğüm alan sürümü `GetAttitude(Node a, Node b)` (`FindInParents` ile). | İkisi. |
+
+### Sınıflar ve ekler
+| Sınıf | Tür | Klasör |
+|---|---|---|
+| `TeamAttitude` (`Friendly`, `Neutral`, `Hostile`) | enum | `TeamAttitude/` |
+| `TeamAttitudeMask` (`Hostile = 1`, `Neutral = 2`, `Friendly = 4`) | `[Flags]` enum | `TeamAttitude/` |
+
+- `IAbilitySystem`: `Tag Team { get; }`, `GetAttitude` (K19).
+- `AbilitySystemComponent`:
+  - `[Export] string TeamName`: tag menüsü; tag ağacı gelince oradan seçilir.
+  - `Tag Team { get; set; }`: ilk `_EnterTree`'de isimden çözülür.
+- `TargetQuery2D`: `Attitudes`. Kaynağın sistemi her `RunAt`'ta bir kez bulunur. `Accepts` içinde, tag kontrollerinden önce `int` karşılaştırması yapılır.
+
+### Kullanım
+```csharp
+// FlameNova: Area.Attitudes = Hostile. Heal Circle: Attitudes = Friendly, ExcludeSource kapalı (kendini de iyileştirir).
+if (IAbilitySystem.GetAttitude(Actor, enemy) == TeamAttitude.Hostile)
+    abilities.TryActivate(attack, new AbilityEventData(attackTag, Actor, enemy));
+```
+
+### Test
+- İlişki kuralının tüm durumları (aynı, farklı, biri takımsız, ikisi takımsız).
+- Çalışma anında `Team` değişince sorgu sonucunun değişmesi.
+- Sorguda her maske birleşimi; ASC'siz hedef; ASC'siz kaynak; `ExcludeSource` kapalıyken kaynağın `Friendly` sayılması.
+- `TeamName` boş veya geçersiz.
+
+### Uygulama sırası
+1. `TeamAttitude`, `TeamAttitudeMask`.
+2. `IAbilitySystem.Team`, `GetAttitude`.
+3. ASC `TeamName`/`Team`.
+4. `TargetQuery2D.Attitudes`.
+5. Doküman.
+
 ## Bağımlılıklar (K3-b ile)
 ```
 AbilitySystemComponent ──► IAbilitySystem (uygular)
@@ -262,4 +312,4 @@ AbilityEventData ──► TargetData
   6. Doküman.
 
 ## Bu Planın Dışında (IDEAS)
-3D sorgu (`TargetQuery3D`), takım ilişkisi filtresi, görüş hattı, özel filtre/sıralama Resource'ları (UE5 Targeting System görev zinciri), vuruş noktasının cue'ya taşınması (K5), asenkron sorgu, kaynak konum bilgisi (Unreal `LocationInfo`, geri itme yönü için), ağ ve tahmin. Faz 3'ten: çoklu onay (`CustomMulti`), nişan sırasında hedef vurgulama, hazır gamepad nişanı, 3D nişangâh.
+3D sorgu (`TargetQuery3D`), takım ittifak tablosu ve effect ile takım değiştirme (Faz 4'ten), görüş hattı, özel filtre/sıralama Resource'ları (UE5 Targeting System görev zinciri), asenkron sorgu, kaynak konum bilgisi (Unreal `LocationInfo`, geri itme yönü için), ağ ve tahmin. Faz 3'ten: çoklu onay (`CustomMulti`), nişan sırasında hedef vurgulama, hazır gamepad nişanı, 3D nişangâh.

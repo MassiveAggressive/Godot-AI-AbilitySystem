@@ -24,6 +24,7 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
     private Resource[] _startingAbilities = Array.Empty<Resource>();
     private bool _processInput;
     private bool _started;
+    private string _teamName = string.Empty;
 
     /// <summary>Attribute set classes added when the node enters the tree (e.g. "CombatSet").</summary>
     [Export]
@@ -68,6 +69,22 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
     }
 
     /// <summary>
+    /// The actor's team tag (e.g. "Team.Player"), picked from the tag menu; empty for none (neutral to everyone).
+    /// Read at run time as <see cref="Team"/>.
+    /// </summary>
+    [Export]
+    public string TeamName
+    {
+        get => _teamName;
+        set
+        {
+            _teamName = value ?? string.Empty;
+            if (_started)
+                Team = ResolveTeam();
+        }
+    }
+
+    /// <summary>
     /// With <see cref="ProcessInput"/>: pressing it calls <see cref="AbilityContainer.InputConfirm"/> (e.g. placing an
     /// aimed spell). Taken, the input reaches no ability; otherwise it works as usual (a left click still attacks).
     /// </summary>
@@ -93,6 +110,12 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
 
     /// <summary>Shows the effects' cues on the actor with <see cref="CueLibrary.Default"/>.</summary>
     public CueContainer Cues { get; private set; }
+
+    /// <summary>
+    /// The team, from <see cref="TeamName"/> when the node first enters the tree. Set it from code to change sides
+    /// (e.g. while charmed); targeting reads it on every query.
+    /// </summary>
+    public Tag Team { get; set; }
 
     /// <summary><paramref name="node"/> itself or its first direct child that is an ability system component; null if none.</summary>
     public static AbilitySystemComponent Find(Node node)
@@ -121,6 +144,7 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
 
         _started = true;
         Actor = GetParent();
+        Team = ResolveTeam();
         Attributes = new AttributeContainer();
         Tags = new TagCountContainer();
         Effects = new ActiveEffectContainer(Attributes, Tags);
@@ -199,6 +223,8 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         Effects.RemoveAll();
     }
 
+    private Tag ResolveTeam() => _teamName.Length == 0 ? Tag.None : TagRegistry.Request(_teamName);
+
     private static bool IsPressed(InputEvent @event, StringName action) => action != null && !action.IsEmpty && @event.IsActionPressed(action);
 
     /// <summary>Several abilities may share an action; it is passed on once.</summary>
@@ -224,6 +250,11 @@ public partial class AbilitySystemComponent : Node, IAbilitySystem
         {
             property["hint"] = (int)PropertyHint.TypeString;
             property["hint_string"] = $"{(int)Variant.Type.String}/{(int)PropertyHint.Enum}:{AttributeRegistry.BuildSetOptions()}";
+        }
+        else if (name == nameof(TeamName))
+        {
+            property["hint"] = (int)PropertyHint.Enum;
+            property["hint_string"] = TagContainer.BuildTagOptions();
         }
         else if (name == nameof(StartingAbilities))
         {

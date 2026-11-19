@@ -1,6 +1,6 @@
 # Cue Sistemi — Plan
 
-> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless.
+> Durum: **uygulandı** (plan kullanıcı onaylı, 2026-11-18); 58 test, headless. Faz 2 (ability cue'ları, vuruş noktası) **onaylandı** (kullanıcı, 2026-11-19): C1–C6 öneriler gibi.
 > Karşılığı: Unreal `GameplayCue` (`UGameplayCueManager`, `FGameplayCueParameters`, `AGameplayCueNotify_Actor`/`UGameplayCueNotify_Static`, `FGameplayEffectCue`). `Gameplay` ön eki yok.
 
 ## Amaç
@@ -96,5 +96,66 @@ Effect katmanı cue katmanını bilmez (`EffectData.Cues` yalnızca tag verisi).
 ## Uygulama Sırası
 1. `CueParameters`, `ICueNotify`. 2. `CueEntry`, `CueLibrary`, proje ayarı (`AbilitySystemPlugin`). 3. `EffectData.Cues`. 4. `CueContainer`. 5. ASC bağlantısı. 6. Testler. 7. Doküman: `ARCHITECTURE.md`, `Effect.md`, `IDEAS.md`, bu dosyanın durumu.
 
+## Faz 2 — Ability Cue'ları ve Vuruş Noktası
+
+Amaç:
+- Ability kendi görselini effect'siz açabilsin: cast parlaması, kanal süresince aura.
+- Vuruş sahnesi temas noktasında ve yüzey yönünde açılsın. Şu an Executed sahnesi hep aktörün konumunda açılıyor.
+
+İkisi de `CueParameters`'ı değiştirdiği için tek plan. Hedefleme K5'in devamı. Karşılığı: Unreal `UGameplayAbility::ExecuteGameplayCue`/`AddGameplayCue` (ability bitince kalkar), `FGameplayCueParameters.Location`/`Normal`, `FGameplayEffectContext` içindeki hit result.
+
+### Kararlar (Faz 2)
+| # | Konu | Seçenekler | Öneri |
+|---|---|---|---|
+| C1 | Vuruş noktası effect'e nasıl ulaşır | (a) `EffectSpec`'e vuruş bilgisi: `HitPoint`, `HitNormal`, `HasHit` (`Vector3`, 2D kısayollarıyla) ve `SetHit(...)`, `Apply`'dan önce çağrılır. Spec paylaşıldığı için `ApplyEffectToTargets` noktası olan her hedefe spec'in bir kopyasını uygular. Unreal da spec'i hedef başına kopyalar ve hit result'ı context'e koyar. (b) `Apply(spec, hit)` aşırı yüklemesi: `EffectExecuted` imzası değişir, dinleyen herkes etkilenir. | (a). Kopya `SetByCaller` değerleriyle birlikte; hedef başına bir allocation (ability anında, kare başına değil). Mermi kendi spec'inde `SetHit` çağırır. |
+| C2 | Executed sahnenin yeri | Konum varsa sahne orada açılır, yoksa bugünkü gibi aktörün konumunda. `AttachExecuted` açıkken de konum uygulanır: sahne aktörün çocuğu olur ama vuruş noktasında başlar. Normal için `CueEntry.RotateToNormal`: 2D'de sahnenin dönüşü normalin açısı olur; 3D'de sahnenin +Y'si normale bakar (kıvılcım, iz). | Bu; `RotateToNormal` varsayılan kapalı. Kanca normali parametreden de okuyabilir. |
+| C3 | `CueParameters` | `Spec` artık null olabilir (koddan ya da ability'den gelen cue). `Instigator`, `Causer`, `Level` spec'ten okunmaz, saklanır. Yeni alanlar: `Location`, `Normal`, `HasLocation` (+ `Location2D`, `Normal2D`). Effect cue'su için kurucu aynı kalır; koddan cue için yeni kurucu. | Bu. Struct büyür ama `in` ile geçiyor. |
+| C4 | Koddan cue API'si | `CueContainer.Execute(Tag, in CueParameters)`, `Add(Tag, in CueParameters)`, `Remove(Tag)`. Süren sahnenin sayacı effect cue'larıyla ortak: aynı tag tek sahne. Hedefte de cue açılabilsin diye `IAbilitySystem.Cues` eklenir (effect'siz vuruş kıvılcımı). Eşleşmeyen fazla `Remove` bir effect'in sahnesini de kapatabilir (dokümana not). | Bu. Aktörün tüm cue'lara kendi kodunda tepki vermesi (ASC cue olayı) IDEAS'ta kalır. |
+| C5 | Ability cue'ları | Ability'ye `ExecuteCue`, `AddCue`, `RemoveCue` eklenir; `Tag` ve `TagContainer` alır, `ExecuteCue` isteğe bağlı konum ve normal de alır. Ability'nin eklediği cue'lar ability bitince kendiliğinden kalkar (Unreal gibi). Ek olarak `ActivationCues` (TagContainer) export'u: ability aktif olduğu sürece görünen cue, kodsuz cast parlaması için (`ActivationOwnedTags` gibi). | İkisi de. |
+| C6 | Ability cue'lara nasıl ulaşır | `AbilityContainer` kurucusuna `CueContainer` parametresi eklenir; ASC verir. ASC'de `Cues`, `Abilities`'ten önce kurulur. Parametrede `Ability` alanı olmaz, çünkü cue katmanı ability'yi bilirse döngü oluşur. `Instigator` aktör, `Level` ability'nin seviyesidir. | Bu. Ability → CueContainer bağımlılığı oluşur, döngü yok. |
+
+### Değişen sınıflar
+- **`EffectSpec`:** `HitPoint`, `HitNormal`, `HasHit`, `SetHit(Vector2/Vector3 point, normal = default)`, `internal CopyWithHit(...)`.
+- **`CueParameters`:** C3.
+- **`CueEntry`:** `RotateToNormal`.
+- **`CueContainer`:**
+  - `Execute`, `Add`, `Remove`.
+  - Executed sahnesini konuma yerleştirir. Effect cue'larında konum spec'in vuruşundan gelir.
+- **`IAbilitySystem`:** `CueContainer Cues { get; }`.
+- **`AbilityContainer`:** kurucuda `CueContainer`.
+- **`AbilitySystemComponent`:** kurulum sırası (C6).
+- **`Ability`:**
+  - Yardımcı metotlar: `ExecuteCue`, `AddCue`, `RemoveCue` (C5).
+  - `ActivationCues`.
+  - Ability'nin eklediği cue'ların sayımı `_ownedTagCount` mantığıyla tutulur; `Finish`'te geri alınır.
+  - `ApplyEffectToTargets`, noktası olan hedefe spec'in kopyasını uygular (C1).
+
+### Kullanım
+```csharp
+// Cast: ActivationCues = Cue.Cast.Fire (aktifken el parlar). Vuruş: mermi temas noktasını spec'e yazar.
+var spec = MakeEffectSpec(Damage, causer: projectile);
+spec.SetHit(contactPoint, contactNormal);   // Damage.Cues = Cue.Hit.Fire → kıvılcım temas noktasında
+target.Effects.Apply(spec);
+
+// Effect olmadan hedefte görsel:
+IAbilitySystem.Find(enemy)?.Cues.Execute(sparkTag, new CueParameters(sparkTag, enemy, instigator: Actor, location: point));
+```
+
+### Test
+- **Vuruş noktası:** Executed sahnenin konumu (vuruşlu ve vuruşsuz); `AttachExecuted` ile konum; `RotateToNormal` 2D ve 3D.
+- **`ApplyEffectToTargets`:** hedef başına kopya, her hedefte kendi noktası; noktasız hedefte paylaşılan spec; kopyada `SetByCaller` değerlerinin korunması.
+- **Koddan cue:** `Execute`, `Add`, `Remove`; effect cue'su ile aynı tag'de tek sahne ve ortak sayaç; `IAbilitySystem.Cues`.
+- **Ability cue'ları:** `ExecuteCue`, `AddCue`, `RemoveCue`; ability bitince (iptal dahil) eklenen cue'ların kalkması; `ActivationCues`.
+- **Kenar durumlar:** kancadan ability'nin bitirilmesi; aktör silinirken temizlik.
+- **Regresyon:** mevcut 58 cue testinin davranışı değişmez (konumsuz cue eskisi gibi).
+
+### Uygulama sırası
+1. `EffectSpec` vuruşu.
+2. `CueParameters`, `CueEntry.RotateToNormal`.
+3. `CueContainer` konum ve kod API'si.
+4. `IAbilitySystem.Cues`, ASC kurulum sırası, `AbilityContainer`.
+5. `Ability` cue yardımcıları, `ActivationCues`, `ApplyEffectToTargets` kopyası.
+6. Doküman: `Effect.md` (spec vuruşu), `Targeting.md` (K5), `ARCHITECTURE.md`, `IDEAS.md`.
+
 ## Bu Planın Dışında (IDEAS)
-Ability cue'ları, koddan cue API'si ve ASC cue olayı (aktörün kendi tepkisi), Fireball örneğine cue, sahne havuzu, cue büyüklüğü (Unreal `RawMagnitude`/`MagnitudeAttribute`), yığın eklenince cue seçeneği.
+ASC cue olayı (aktörün kendi tepkisi), Fireball örneğine cue, sahne havuzu, cue büyüklüğü (Unreal `RawMagnitude`/`MagnitudeAttribute`), yığın eklenince cue seçeneği.

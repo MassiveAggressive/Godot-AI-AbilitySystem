@@ -25,17 +25,16 @@
 - Aynı ability'yi birden fazla kaynağın vermesi (sayaç).
 
 ## Cue (`Systems/Cue.md` kapsamı dışında kalanlar)
-- **Ability cue'ları:** ability'den `ExecuteCue(tag)`, `AddCue(tag)` (ability bitince kalkar; ör. cast parlaması).
-- **Koddan cue ve ASC cue olayı:** `asc.Cues.Execute/Add/Remove`; aktör tüm cue'lara kendi kodunda tepki verir (Unreal `IGameplayCueInterface`).
+- **ASC cue olayı:** aktör tüm cue'lara kendi kodunda tepki verir (Unreal `IGameplayCueInterface`); koddan cue API'si `Cue.md` Faz 2'de.
 - **Fireball örneğine cue:** cast ve vuruş görselleri.
 - **Sahne havuzu:** sık açılan cue sahnelerini yeniden kullanma (Unreal cue actor recycling).
 - **Cue büyüklüğü:** parametrede effect'ten bir sayı (Unreal `RawMagnitude`/`NormalizedMagnitude`, `MagnitudeAttribute`).
 - **Yığın eklenince cue:** her yeni yığında Executed seçeneği (Unreal `Suppress Stacking Cues` karşılığı; şu an hiçbir şey olmaz).
-- **Cue konumu:** vuruş noktası ve normali parametrede (Unreal `Location`/`Normal`); şu an Executed sahnesi aktörün konumunda açılır.
 
 ## Hedefleme (`Systems/Targeting.md` kapsamı dışında kalanlar)
 - **3D sorgu:** `TargetQuery3D` (küre, koni, kutu, ışın); veri (`TargetData`) zaten 3D noktaları taşıyor.
-- **Takım ilişkisi filtresi:** "kaynağın düşmanı/dostu" (Unreal team interface); şu an yalnızca hedefin tag'leri.
+- **Takım ittifak tablosu:** takımlar arası proje geneli ilişki (Unreal `SetAttitudeSolver`); `Targeting.md` Faz 4'te yalnızca aynı/farklı/takımsız.
+- **Effect ile takım değiştirme:** büyülenme gibi geçici takım; Faz 4'te yalnızca koddan `Team`.
 - **Görüş hattı:** hedefe kaynaktan ışın atıp engel varsa eleme.
 - **Özel filtre/sıralama Resource'ları:** UE5 Targeting System görev zinciri gibi; şu an koddan tek `Func<Node, bool>`.
 - **Kaynak konum bilgisi:** hedef verisinde başlangıç noktası/yönü (Unreal `LocationInfo`, geri itme için).
@@ -47,7 +46,7 @@
 ## Tags (Godot-AI-Tags reposu, burada tutulur çünkü AbilitySystem ihtiyaç duyar)
 - `TagQuery` / `TagRequirements`: karmaşık sorgular (herhangi biri / hepsi / hiçbiri).
 - `TagCountContainer` için tag'e özel dinleyici.
-- **Tag seçme ağacı:** `TagContainer` için tag seçimi, Unreal'daki gibi hiyerarşik ağaç penceresiyle (ör. `State` → `Debuff` → `Stun`, `Action` → `Attack` → `Melee`/`Range`; düğümler açılıp kapanır, işaretlenerek eklenir). Şu an her tag, dropdown menüden tek tek seçiliyor (`TagContainer.BuildTagOptions`); tag sayısı artınca düz liste zorlaşıyor. Editör eklentisi (`#if TOOLS`) ve `TagContainer`'ın inspector alanı değişir; çalışma anı ve `Tags.tres` biçimi aynı kalır. Ayrıca aynı seçici tekil tag alanları için de kullanılabilir (`Magnitude.CallerTagName`, ability tetikleyicileri).
+- **Ağaçtan yeni tag ekleme/yeniden adlandırma:** seçiciden `Tags.tres`'e yazma (Unreal "Add New Tag"); seçme ağacının kendisi Tags reposunda `Docs/Systems/TagPicker.md`'de planlı.
 
 ## Timers (Godot-AI-Timers reposu)
 - Zaman genişletme: aktöre/gruba özel zaman ölçeği (bullet-time, donma). Şu an tek global saat.

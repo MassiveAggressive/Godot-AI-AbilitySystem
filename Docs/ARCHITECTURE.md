@@ -15,6 +15,7 @@ Sistem ayrıntıları ve kararları: `Docs/Systems/<Sistem>.md`. Burada yalnızc
 | `CueParameters`, `ICueNotify`, `CueEntry`, `CueLibrary` (Resource'lar), `CueContainer` | FGameplayCueParameters, IGameplayCueInterface/GameplayCueNotify, UGameplayCueManager | Effect cue'ları uygulandı (`Cue.md`) |
 | `IAbilitySystem`, `TargetHit`, `TargetData`, `TargetQuery2D` (Resource), `TargetShape`, `TargetSort` | IAbilitySystemInterface, FGameplayAbilityTargetData(Handle), UE5 Targeting System (sade) | Faz 1–2 uygulandı (`Targeting.md`) |
 | `WaitTargetDataTask`, `TargetConfirmation`, `TargetReticle2D` (Node2D); `AbilityContainer.InputConfirm`/`InputCancel` | UAbilityTask_WaitTargetData, AGameplayAbilityTargetActor_GroundTrace, AGameplayAbilityWorldReticle, LocalInputConfirm/Cancel | Faz 3 uygulandı (`Targeting.md`) |
+| `TeamAttitude`, `TeamAttitudeMask`; `IAbilitySystem.Team`/`GetAttitude`, ASC `TeamName`/`Team`, `TargetQuery2D.Attitudes` | IGenericTeamAgentInterface, FGenericTeamId, ETeamAttitude | Faz 4 uygulandı (`Targeting.md`) |
 | Cooldown | Cooldown GE | Ayrı sınıf yok: `Ability.Cooldown` bir `EffectData` (HasDuration + granted tag) |
 | `AbilitySystemComponent` | ASC | Uygulandı; alt sistemleri birleştirir, kendisi mantık taşımaz (`Ability.md`) |
 
